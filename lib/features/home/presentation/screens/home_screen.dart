@@ -1,0 +1,325 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:indikom_app/features/home/bloc/home_bloc.dart';
+import 'package:indikom_app/shared/widgets/category_card.dart';
+import 'package:indikom_app/shared/widgets/product_card.dart';
+import 'package:indikom_app/shared/widgets/promotional_banner.dart';
+import 'package:indikom_app/shared/widgets/section_header.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/text_styles.dart';
+import '../../../../core/utils/responsive_utils.dart';
+import '../../../../core/utils/extensions.dart'; // ✅ Import this
+import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/language_switcher.dart'; // ✅ Import this
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<HomeBloc>().add(LoadHomeDataEvent());
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: _buildAppBar(),
+      body: BlocBuilder<HomeBloc, HomeState>(
+        builder: (context, state) {
+          if (state is HomeLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          return CustomScrollView(
+            slivers: [
+              // Search Bar
+              SliverToBoxAdapter(child: _buildSearchBar()),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+              // Categories Section
+              SliverToBoxAdapter(
+                  child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: _buildCategoriesSection(),
+              )),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+              // Promotional Banner
+              SliverToBoxAdapter(
+                  child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: _buildPromotionalBanner(),
+              )),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+              // Featured Products
+              SliverToBoxAdapter(
+                  child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: _buildFeaturedProducts(),
+              )),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+              // Sofas Category
+              SliverToBoxAdapter(
+                  child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: _buildCategorySection('Sofas'),
+              )),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            ],
+          );
+        },
+      ),
+      // bottomNavigationBar: _buildBottomNavigation(),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: AppColors.surface,
+      elevation: 0,
+      toolbarHeight: 70,
+      leading: Container(),
+      title: Row(
+        children: [
+          Text(
+            'IndiKom', // ✅ Keep brand name as is (or translate if needed)
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        // ✅ Language Switcher
+        const LanguageSwitcher(showDropdown: false),
+        const SizedBox(width: 12),
+        // Cart Icon
+        IconButton(
+          onPressed: () {
+            // Navigate to cart
+          },
+          icon: const Icon(Icons.shopping_cart_outlined),
+          color: AppColors.primary,
+        ),
+        const SizedBox(width: 8),
+      ],
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      margin: Responsive.horizontalPadding(context, false),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        height: 50,
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: TextField(
+          decoration: InputDecoration(
+            hintText: context.tr('search_hint'), // ✅ TRANSLATED
+            hintStyle:
+                AppTextStyles.bodyMedium.copyWith(color: AppColors.textHint),
+            prefixIcon: const Icon(Icons.search, color: AppColors.primary),
+            border: InputBorder.none,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoriesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: Responsive.horizontalPadding(context, false),
+          child: Text(
+            context.tr('categories'), // ✅ TRANSLATED
+            style: AppTextStyles.h3,
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 110,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: Responsive.horizontalPadding(context, false),
+            children: [
+              CategoryCard(
+                icon: 'assets/icons/sofa.svg',
+                label: context.tr('sofas'), // ✅ TRANSLATED
+                onTap: () {},
+              ),
+              const SizedBox(width: 12),
+              CategoryCard(
+                icon: 'assets/icons/door.svg',
+                label: context.tr('doors'), // ✅ TRANSLATED
+                onTap: () {},
+              ),
+              const SizedBox(width: 12),
+              CategoryCard(
+                icon: 'assets/icons/wardrobe.svg',
+                label: context.tr('wardrobes'), // ✅ TRANSLATED
+                onTap: () {},
+              ),
+              const SizedBox(width: 12),
+              CategoryCard(
+                icon: 'assets/icons/appliance.svg',
+                label: context.tr('appliances'), // ✅ TRANSLATED
+                onTap: () {},
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPromotionalBanner() {
+    return Container(
+      margin: Responsive.horizontalPadding(context, false),
+      height: 250,
+      child: const PromotionalBanner(
+        imageUrl: 'assets/images/banner_refrigerator.jpg',
+        title: 'LOREM IPSUM DOLOR',
+        subtitle: 'Lorem ipsum dolor sit amet consectetur.',
+        discount: '15% OFF',
+      ),
+    );
+  }
+
+  Widget _buildFeaturedProducts() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: Responsive.horizontalPadding(context, false),
+          child: SectionHeader(
+            title: context.tr('featured_products'), // ✅ TRANSLATED
+            onSeeAllPressed: () {},
+          ),
+        ),
+        const SizedBox(height: 16),
+        Padding(
+          padding: Responsive.horizontalPadding(context, false),
+          child: Responsive.isMobile(context)
+              ? _buildProductGrid(2)
+              : Responsive.isTablet(context)
+                  ? _buildProductGrid(3)
+                  : _buildProductGrid(4),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategorySection(String categoryName) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: Responsive.horizontalPadding(context, false),
+          child: SectionHeader(
+            title: categoryName, // You can translate this too if needed
+            onSeeAllPressed: () {},
+          ),
+        ),
+        const SizedBox(height: 16),
+        Padding(
+          padding: Responsive.horizontalPadding(context, false),
+          child: Responsive.isMobile(context)
+              ? _buildProductGrid(2)
+              : Responsive.isTablet(context)
+                  ? _buildProductGrid(3)
+                  : _buildProductGrid(4),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProductGrid(int crossAxisCount) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.75,
+      ),
+      itemCount: 4,
+      itemBuilder: (context, index) {
+        return const ProductCard(
+          imageUrl: 'https://via.placeholder.com/200',
+          title: 'Product Name',
+          price: '\$999',
+        );
+      },
+    );
+  }
+
+  Widget _buildBottomNavigation() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: BottomNavigationBar(
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.textSecondary,
+        currentIndex: 0,
+        onTap: (index) {
+          // Handle navigation
+        },
+        items: [
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.home_outlined),
+            activeIcon: const Icon(Icons.home),
+            label: context.tr('home'), // ✅ TRANSLATED
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.inventory_2_outlined),
+            activeIcon: const Icon(Icons.inventory_2),
+            label: context.tr('orders'), // ✅ TRANSLATED
+          ),
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.person_outline),
+            activeIcon: const Icon(Icons.person),
+            label: context.tr('profile'), // ✅ TRANSLATED
+          ),
+        ],
+      ),
+    );
+  }
+}
