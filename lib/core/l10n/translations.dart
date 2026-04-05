@@ -22,6 +22,12 @@ class AppTranslations {
       'language': 'Language',
       'english': 'English',
       'arabic': 'العربية',
+      'saved_addresses': 'Saved Addresses',
+      'notifications': 'Notifications',
+      'change_language': 'Change Language',
+      'logout': 'Logout',
+      'cancel': 'Cancel',
+      'phone_number': 'Phone Number',
       // ... add more keys
     },
     'ar': {
@@ -44,6 +50,12 @@ class AppTranslations {
       'language': 'اللغة',
       'english': 'English',
       'arabic': 'العربية',
+      'saved_addresses': 'العناوين المحفوظة',
+      'notifications': 'الإشعارات',
+      'change_language': 'تغيير اللغة',
+      'logout': 'تسجيل الخروج',
+      'cancel': 'إلغاء',
+      'phone_number': 'رقم الهاتف',
       // ... add more keys
     },
   };

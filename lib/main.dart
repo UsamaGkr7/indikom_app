@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:indikom_app/features/home/bloc/home_bloc.dart';
+import 'package:indikom_app/features/profile/presentation/bloc/profile_bloc.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/hive_keys.dart';
 import 'core/l10n/app_localizations.dart';
@@ -52,6 +53,7 @@ class MyApp extends StatelessWidget {
         BlocProvider.value(value: authBloc),
         BlocProvider(create: (_) => HomeBloc()),
         BlocProvider.value(value: languageBloc),
+        BlocProvider(create: (_) => ProfileBloc()),
       ],
       child: BlocBuilder<LanguageBloc, LanguageState>(
         builder: (context, state) {

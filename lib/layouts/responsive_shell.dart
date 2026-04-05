@@ -17,7 +17,7 @@ class ResponsiveShell extends StatelessWidget {
     // Check user role
     String? role;
     if (isLoggedIn) {
-      role = authState.user['role'] as String?;
+      role = authState.userData['role'] as String?;
     }
 
     // ✅ Only show WebDashboardLayout for Supplier/Admin roles

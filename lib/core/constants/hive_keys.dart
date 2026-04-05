@@ -1,22 +1,20 @@
-/// Hive Box and Field Keys
 class HiveKeys {
-  // ========== BOXES ==========
+  // Boxes
   static const String authBox = 'authBox';
-  static const String userBox = 'userBox';
-  static const String cartBox = 'cartBox';
-  static const String profileBox = 'profileBox';
-  static const String settingsBox = 'settingsBox'; // ✅ ADD THIS LINE
+  static const String settingsBox = 'settingsBox';
 
-  // ========== AUTH FIELDS ==========
-  static const String accessToken = 'accessToken';
-  static const String refreshToken = 'refreshToken';
-  static const String userId = 'userId';
-  static const String role = 'role';
+  // Auth Fields
+  static const String accessToken = 'accessToken'; // ✅ JWT Access Token
+  static const String refreshToken = 'refreshToken'; // ✅ JWT Refresh Token
+  static const String phoneNumber = 'phoneNumber'; // ✅ User Phone
+  static const String userData = 'userData'; // ✅ Complete user data
+  static const String tempPhoneNumber =
+      'tempPhoneNumber'; // ✅ For OTP verification
 
-  // ========== CART FIELDS ==========
+  // Cart
   static const String cartItems = 'cartItems';
 
-  // ========== SETTINGS FIELDS ==========
+  // Settings
   static const String languageCode = 'language_code';
   static const String themeMode = 'theme_mode';
 }

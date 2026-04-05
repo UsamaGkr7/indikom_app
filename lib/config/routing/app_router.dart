@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:indikom_app/features/profile/presentation/profile_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/otp_verification_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
@@ -61,8 +62,11 @@ class AppRouter {
           path: RoutePaths.otp,
           builder: (context, state) {
             final phoneNumber = state.extra as Map<String, dynamic>?;
+            final extra = state.extra as Map<String, dynamic>?;
+
             return OtpVerificationScreen(
-              phoneNumber: phoneNumber?['phoneNumber'] ?? '',
+              phoneNumber: extra?['phoneNumber'] ?? '',
+              otpFromApi: extra?['otpFromApi']?.toString(), // ✅ ADD THIS LINE
             );
           },
         ),
@@ -107,11 +111,4 @@ class OrderHistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       const Scaffold(body: Center(child: Text('Orders')));
-}
-
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
-  @override
-  Widget build(BuildContext context) =>
-      const Scaffold(body: Center(child: Text('Profile')));
 }

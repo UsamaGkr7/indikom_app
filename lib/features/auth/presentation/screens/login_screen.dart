@@ -20,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  String _userType = 'customer'; // 'customer' or 'business'
 
   @override
   void dispose() {
@@ -43,23 +44,13 @@ class _LoginScreenState extends State<LoginScreen> {
         _isLoading = true;
       });
 
-      // Dispatch OTP request event
+      // ✅ Dispatch OTP request event
       context.read<AuthBloc>().add(
             AuthSendOtpEvent(
               phoneNumber: _phoneController.text,
+              userType: _userType,
             ),
           );
-
-      // Navigate to OTP screen after short delay (for demo)
-      Future.delayed(const Duration(milliseconds: 500), () {
-        setState(() {
-          _isLoading = false;
-        });
-        context.push(
-          RoutePaths.otp,
-          extra: {'phoneNumber': _phoneController.text},
-        );
-      });
     }
   }
 
@@ -76,21 +67,20 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 40),
-                // Logo/Brand Name
                 Center(
                   child: Text(
                     'IndiKom',
                     style: AppTextStyles.h1.copyWith(
-                        fontWeight: FontWeight.bold, color: Colors.blue),
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Center(
                   child: Text(
                     'Welcome Back',
-                    style: AppTextStyles.h2.copyWith(
-                      fontSize: 28,
-                    ),
+                    style: AppTextStyles.h2,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -103,13 +93,53 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 48),
 
+                // User Type Selection
+                // Text(
+                //   'I am a:',
+                //   style: AppTextStyles.bodyMedium.copyWith(
+                //     fontWeight: FontWeight.w600,
+                //   ),
+                // ),
+                // const SizedBox(height: 12),
+                // Row(
+                //   children: [
+                //     Expanded(
+                //       child: RadioListTile<String>(
+                //         title: const Text('Customer'),
+                //         value: 'customer',
+                //         groupValue: _userType,
+                //         onChanged: (value) {
+                //           setState(() {
+                //             _userType = value!;
+                //           });
+                //         },
+                //         activeColor: AppColors.primary,
+                //       ),
+                //     ),
+                //     Expanded(
+                //       child: RadioListTile<String>(
+                //         title: const Text('Business'),
+                //         value: 'business',
+                //         groupValue: _userType,
+                //         onChanged: (value) {
+                //           setState(() {
+                //             _userType = value!;
+                //           });
+                //         },
+                //         activeColor: AppColors.primary,
+                //       ),
+                //     ),
+                //   ],
+                // ),
+                // const SizedBox(height: 24),
+
                 // Phone Number Input
                 AppTextField(
                   label: 'Phone Number',
                   hint: '000 000 0000',
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
-                  prefix: Padding(
+                  prefix: const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       '+1',
@@ -117,12 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
-                      textAlign: TextAlign.center,
                     ),
-                  ),
-                  suffixIcon: TextButton(
-                    onPressed: _isLoading ? null : _handleGetOTP,
-                    child: const Text('Get OTP'),
                   ),
                   validator: _validatePhone,
                   inputFormatters: [
@@ -134,10 +159,35 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 32),
 
                 // Continue Button
-                AppButton(
-                  text: 'Continue',
-                  onPressed: _isLoading ? null : _handleGetOTP,
-                  isLoading: _isLoading,
+                BlocListener<AuthBloc, AuthState>(
+                  listener: (context, state) {
+                    setState(() {
+                      _isLoading = false;
+                    });
+
+                    if (state is AuthOtpSent) {
+                      // ✅ Navigate to OTP screen
+                      context.push(
+                        RoutePaths.otp,
+                        extra: {
+                          'phoneNumber': _phoneController.text,
+                          'otpFromApi': state.otpFromResponse, // For debugging
+                        },
+                      );
+                    } else if (state is AuthError) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(state.message),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
+                  },
+                  child: AppButton(
+                    text: 'Continue',
+                    onPressed: _isLoading ? null : _handleGetOTP,
+                    isLoading: _isLoading,
+                  ),
                 ),
 
                 const SizedBox(height: 24),

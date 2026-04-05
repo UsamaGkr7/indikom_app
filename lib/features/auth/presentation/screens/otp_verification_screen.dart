@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -11,10 +10,12 @@ import '../bloc/auth_bloc.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;
+  final String? otpFromApi; // OTP from API response
 
   const OtpVerificationScreen({
     super.key,
     required this.phoneNumber,
+    this.otpFromApi,
   });
 
   @override
@@ -30,9 +31,21 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   bool _isLoading = false;
 
   @override
+  @override
   void initState() {
     super.initState();
+    print('at otp:::::;');
+    print('otpFromApi value: ${widget.otpFromApi}'); // Debug print
+
     _startResendTimer();
+
+    // ✅ Auto-fill OTP immediately if received from API
+    if (widget.otpFromApi != null && widget.otpFromApi!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        print('Auto-filling OTP: ${widget.otpFromApi}');
+        _autoFillOTP(widget.otpFromApi!);
+      });
+    }
   }
 
   @override
@@ -45,6 +58,44 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       node.dispose();
     }
     super.dispose();
+  }
+
+  // ✅ Auto-fill OTP into input fields
+  void _autoFillOTP(String otp) {
+    // Ensure OTP is exactly 6 digits
+    if (otp.length != 6) {
+      print('⚠️ OTP length is ${otp.length}, expected 6 digits');
+      return;
+    }
+
+    // Fill each digit into respective field
+    for (int i = 0; i < 6 && i < otp.length; i++) {
+      _otpControllers[i].text = otp[i];
+
+      // Move focus to next field
+      if (i < 5) {
+        _focusNodes[i + 1].requestFocus();
+      }
+    }
+
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.auto_awesome, color: Colors.white),
+            const SizedBox(width: 8),
+            Text('OTP auto-filled: $otp'),
+          ],
+        ),
+        backgroundColor: AppColors.success,
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    // Auto-focus last field
+    _focusNodes[5].requestFocus();
   }
 
   String _getOTP() {
@@ -71,35 +122,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         _isLoading = true;
       });
 
-      if (kDebugMode) {
-        print('Verifying OTP: $otp for phone: ${widget.phoneNumber}');
-      }
+      print('Verifying OTP: $otp for phone: ${widget.phoneNumber}');
 
-      // Dispatch verify OTP event
       context.read<AuthBloc>().add(
             AuthVerifyOtpEvent(
               phoneNumber: widget.phoneNumber,
               otp: otp,
             ),
           );
-
-      // Simulate verification (replace with actual logic)
-      Future.delayed(const Duration(seconds: 1), () {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-
-          // Navigate to home or role selection
-          if (kDebugMode) {
-            print('Navigating to home...');
-          }
-          context.pushReplacement(RoutePaths.home);
-        }
-      });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Please enter complete 6-digit OTP'),
           backgroundColor: AppColors.error,
         ),
@@ -114,13 +147,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       });
       _startResendTimer();
 
-      // Clear existing OTP
       for (var controller in _otpControllers) {
         controller.clear();
       }
       _focusNodes[0].requestFocus();
 
-      // Resend OTP logic
       context.read<AuthBloc>().add(
             AuthSendOtpEvent(
               phoneNumber: widget.phoneNumber,
@@ -128,7 +159,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           );
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('OTP sent successfully'),
           backgroundColor: AppColors.success,
         ),
@@ -147,7 +178,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-              // Back Button
               IconButton(
                 onPressed: () => context.pop(),
                 icon: const Icon(Icons.arrow_back_ios_new),
@@ -155,7 +185,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Title
               Text(
                 'Verification',
                 style: AppTextStyles.h2,
@@ -178,19 +207,60 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               ),
               const SizedBox(height: 40),
 
-              // OTP Input Fields
-              _buildOTPInput(),
+              // OTP Input
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(6, (index) {
+                    return SizedBox(
+                      width: 55,
+                      height: 50,
+                      child: TextField(
+                        controller: _otpControllers[index],
+                        focusNode: _focusNodes[index],
+                        keyboardType: TextInputType.number,
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.h3.copyWith(fontSize: 20),
+                        maxLength: 1,
+                        decoration: InputDecoration(
+                          counterText: '',
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide:
+                                const BorderSide(color: AppColors.border),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide:
+                                const BorderSide(color: AppColors.border),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                                color: AppColors.primary, width: 2),
+                          ),
+                        ),
+                        onChanged: (value) {
+                          if (value.isNotEmpty && index < 5) {
+                            _focusNodes[index + 1].requestFocus();
+                          }
+                        },
+                      ),
+                    );
+                  }),
+                ),
+              ),
 
               const SizedBox(height: 16),
 
-              // Resend OTP
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   TextButton(
-                    onPressed: () {
-                      context.pop();
-                    },
+                    onPressed: () => context.pop(),
                     child: const Text('Change Number'),
                   ),
                   if (_resendTimer > 0)
@@ -210,83 +280,42 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
               const SizedBox(height: 32),
 
-              // Verify Button
-              AppButton(
-                text: 'Verify & Continue',
-                onPressed: _isLoading ? null : _handleVerifyOTP,
-                isLoading: _isLoading,
+              BlocListener<AuthBloc, AuthState>(
+                listener: (context, state) {
+                  setState(() {
+                    _isLoading = false;
+                  });
+
+                  if (state is AuthAuthenticated) {
+                    // ✅ Navigate to home
+                    context.pushReplacement(RoutePaths.home);
+                  } else if (state is AuthError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                  }
+                },
+                child: AppButton(
+                  text: 'Verify & Continue',
+                  onPressed: _isLoading ? null : _handleVerifyOTP,
+                  isLoading: _isLoading,
+                ),
               ),
 
               const SizedBox(height: 24),
 
-              // Help Text
               Center(
                 child: TextButton(
-                  onPressed: () {
-                    // Show help dialog
-                  },
+                  onPressed: () {},
                   child: const Text('Need Help?'),
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildOTPInput() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: List.generate(6, (index) {
-          return _buildOTPBox(index);
-        }),
-      ),
-    );
-  }
-
-  Widget _buildOTPBox(int index) {
-    return SizedBox(
-      width: 55,
-      height: 50,
-      child: TextField(
-        controller: _otpControllers[index],
-        focusNode: _focusNodes[index],
-        keyboardType: TextInputType.number,
-        textAlign: TextAlign.center,
-        style: AppTextStyles.h3.copyWith(fontSize: 20),
-        maxLength: 1,
-        decoration: InputDecoration(
-          counterText: '',
-          filled: true,
-          fillColor: Colors.white,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.primary, width: 2),
-          ),
-        ),
-        onChanged: (value) {
-          if (value.isNotEmpty && index < 5) {
-            _focusNodes[index + 1].requestFocus();
-          }
-        },
-        onSubmitted: (value) {
-          if (value.isEmpty && index > 0) {
-            _focusNodes[index - 1].requestFocus();
-          } else if (value.isNotEmpty && index < 5) {
-            _focusNodes[index + 1].requestFocus();
-          }
-        },
       ),
     );
   }

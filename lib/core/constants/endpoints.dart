@@ -1,27 +1,18 @@
-/// API Endpoints (Flavor dependent)
 class Endpoints {
-  // Auth
-  static const String login = '/auth/login';
-  static const String sendOtp = '/auth/send-otp';
-  static const String verifyOtp = '/auth/verify-otp';
+  // ✅ Update with your Django backend URL
+  static const String baseUrl = 'http://192.168.0.101:8000';
 
-  // User
-  static const String userProfile = '/user/profile';
-  static const String categories = '/user/categories';
-  static const String products = '/user/products';
+  // Auth Endpoints
+  static const String register = '/api/accounts/register/';
+  static const String verifyOtp = '/api/accounts/verify-otp/';
+  static const String login = '/api/accounts/login/';
+  static const String logout = '/api/accounts/logout/';
 
-  // Supplier
-  static const String supplierDashboard = '/supplier/dashboard';
-  static const String uploadProduct = '/supplier/products';
-  static const String orders = '/supplier/orders';
+  // Product Endpoints
+  static const String products = '/api/products/';
+  static const String categories = '/api/categories/';
 
-  // Admin
-  static const String adminDashboard = '/admin/dashboard';
-  static const String users = '/admin/users';
-  static const String moderation = '/admin/moderation';
-
-  // Common
-  static const String baseUrlDev = 'https://dev-api.indikom.com/api/v1';
-  static const String baseUrlStaging = 'https://staging-api.indikom.com/api/v1';
-  static const String baseUrlProd = 'https://api.indikom.com/api/v1';
+  // Order Endpoints
+  static const String orders = '/api/orders/';
+  static const String cart = '/api/cart/';
 }
