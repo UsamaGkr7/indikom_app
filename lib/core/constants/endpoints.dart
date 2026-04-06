@@ -1,6 +1,6 @@
 class Endpoints {
   // ✅ Update with your Django backend URL
-  static const String baseUrl = 'http://192.168.0.101:8000';
+  static const String baseUrl = 'http://192.168.0.104:8000';
 
   // Auth Endpoints
   static const String register = '/api/accounts/register/';

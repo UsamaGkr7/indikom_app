@@ -98,11 +98,19 @@ class _HomeScreenState extends State<HomeScreen> {
       title: Row(
         children: [
           Text(
-            'IndiKom', // ✅ Keep brand name as is (or translate if needed)
+            'Indi', // ✅ Keep brand name as is (or translate if needed)
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: AppColors.primary,
+            ),
+          ),
+          Text(
+            'Kom', // ✅ Keep brand name as is (or translate if needed)
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppColors.secondary,
             ),
           ),
         ],

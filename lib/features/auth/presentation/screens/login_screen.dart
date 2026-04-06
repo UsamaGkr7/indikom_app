@@ -64,154 +64,182 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Form(
             key: _formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 40),
                 Center(
-                  child: Text(
-                    'IndiKom',
-                    style: AppTextStyles.h1.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Center(
-                  child: Text(
-                    'Welcome Back',
-                    style: AppTextStyles.h2,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Center(
-                  child: Text(
-                    'Let\'s Quickly Verify your phone no.',
-                    style: AppTextStyles.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                const SizedBox(height: 48),
-
-                // User Type Selection
-                // Text(
-                //   'I am a:',
-                //   style: AppTextStyles.bodyMedium.copyWith(
-                //     fontWeight: FontWeight.w600,
-                //   ),
-                // ),
-                // const SizedBox(height: 12),
-                // Row(
-                //   children: [
-                //     Expanded(
-                //       child: RadioListTile<String>(
-                //         title: const Text('Customer'),
-                //         value: 'customer',
-                //         groupValue: _userType,
-                //         onChanged: (value) {
-                //           setState(() {
-                //             _userType = value!;
-                //           });
-                //         },
-                //         activeColor: AppColors.primary,
-                //       ),
-                //     ),
-                //     Expanded(
-                //       child: RadioListTile<String>(
-                //         title: const Text('Business'),
-                //         value: 'business',
-                //         groupValue: _userType,
-                //         onChanged: (value) {
-                //           setState(() {
-                //             _userType = value!;
-                //           });
-                //         },
-                //         activeColor: AppColors.primary,
-                //       ),
-                //     ),
-                //   ],
-                // ),
-                // const SizedBox(height: 24),
-
-                // Phone Number Input
-                AppTextField(
-                  label: 'Phone Number',
-                  hint: '000 000 0000',
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  prefix: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      '+1',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  validator: _validatePhone,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(10),
-                  ],
-                ),
-
-                const SizedBox(height: 32),
-
-                // Continue Button
-                BlocListener<AuthBloc, AuthState>(
-                  listener: (context, state) {
-                    setState(() {
-                      _isLoading = false;
-                    });
-
-                    if (state is AuthOtpSent) {
-                      // ✅ Navigate to OTP screen
-                      context.push(
-                        RoutePaths.otp,
-                        extra: {
-                          'phoneNumber': _phoneController.text,
-                          'otpFromApi': state.otpFromResponse, // For debugging
-                        },
-                      );
-                    } else if (state is AuthError) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(state.message),
-                          backgroundColor: AppColors.error,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Indi', // ✅ Keep brand name as is (or translate if needed)
+                        style: TextStyle(
+                          fontSize: 40,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
                         ),
-                      );
-                    }
-                  },
-                  child: AppButton(
-                    text: 'Continue',
-                    onPressed: _isLoading ? null : _handleGetOTP,
-                    isLoading: _isLoading,
+                      ),
+                      Text(
+                        'Kom', // ✅ Keep brand name as is (or translate if needed)
+                        style: TextStyle(
+                          fontSize: 40,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.secondary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-
-                const SizedBox(height: 24),
-
-                // Terms & Conditions
-                Center(
-                  child: RichText(
-                    text: const TextSpan(
-                      style: AppTextStyles.bodySmall,
+                const SizedBox(height: 8),
+                Card(
+                  elevation: 10,
+                  shadowColor: Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TextSpan(text: 'By continuing, you agree to our '),
-                        TextSpan(
-                          text: 'Terms & Conditions',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
+                        Center(
+                          child: Text(
+                            'Welcome Back',
+                            style: AppTextStyles.h2,
                           ),
                         ),
-                        TextSpan(text: ' and '),
-                        TextSpan(
-                          text: 'Privacy Policy',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
+                        const SizedBox(height: 8),
+                        Center(
+                          child: Text(
+                            'Let\'s Quickly Verify your phone no.',
+                            style: AppTextStyles.bodyMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(height: 48),
+
+                        // User Type Selection
+                        // Text(
+                        //   'I am a:',
+                        //   style: AppTextStyles.bodyMedium.copyWith(
+                        //     fontWeight: FontWeight.w600,
+                        //   ),
+                        // ),
+                        // const SizedBox(height: 12),
+                        // Row(
+                        //   children: [
+                        //     Expanded(
+                        //       child: RadioListTile<String>(
+                        //         title: const Text('Customer'),
+                        //         value: 'customer',
+                        //         groupValue: _userType,
+                        //         onChanged: (value) {
+                        //           setState(() {
+                        //             _userType = value!;
+                        //           });
+                        //         },
+                        //         activeColor: AppColors.primary,
+                        //       ),
+                        //     ),
+                        //     Expanded(
+                        //       child: RadioListTile<String>(
+                        //         title: const Text('Business'),
+                        //         value: 'business',
+                        //         groupValue: _userType,
+                        //         onChanged: (value) {
+                        //           setState(() {
+                        //             _userType = value!;
+                        //           });
+                        //         },
+                        //         activeColor: AppColors.primary,
+                        //       ),
+                        //     ),
+                        //   ],
+                        // ),
+                        // const SizedBox(height: 24),
+
+                        // Phone Number Input
+                        AppTextField(
+                          label: 'Phone Number',
+                          hint: '000 000 0000',
+                          controller: _phoneController,
+                          keyboardType: TextInputType.phone,
+                          prefix: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 12),
+                            child: Text(
+                              '+1',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          validator: _validatePhone,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(10),
+                          ],
+                        ),
+
+                        const SizedBox(height: 32),
+
+                        // Continue Button
+                        BlocListener<AuthBloc, AuthState>(
+                          listener: (context, state) {
+                            setState(() {
+                              _isLoading = false;
+                            });
+
+                            if (state is AuthOtpSent) {
+                              // ✅ Navigate to OTP screen
+                              context.push(
+                                RoutePaths.otp,
+                                extra: {
+                                  'phoneNumber': _phoneController.text,
+                                  'otpFromApi':
+                                      state.otpFromResponse, // For debugging
+                                },
+                              );
+                            } else if (state is AuthError) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(state.message),
+                                  backgroundColor: AppColors.error,
+                                ),
+                              );
+                            }
+                          },
+                          child: AppButton(
+                            text: 'Continue',
+                            onPressed: _isLoading ? null : _handleGetOTP,
+                            isLoading: _isLoading,
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Terms & Conditions
+                        Center(
+                          child: RichText(
+                            text: const TextSpan(
+                              style: AppTextStyles.bodySmall,
+                              children: [
+                                TextSpan(
+                                    text: 'By continuing, you agree to our '),
+                                TextSpan(
+                                  text: 'Terms & Conditions',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                TextSpan(text: ' and '),
+                                TextSpan(
+                                  text: 'Privacy Policy',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
