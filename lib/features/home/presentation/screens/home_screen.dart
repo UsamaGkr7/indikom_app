@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:indikom_app/features/home/bloc/home_bloc.dart';
+import 'package:indikom_app/features/home/presentation/bloc/banner_bloc.dart';
+import 'package:indikom_app/features/home/presentation/widgets/banner_carousel.dart';
 import 'package:indikom_app/shared/widgets/category_card.dart';
 import 'package:indikom_app/shared/widgets/product_card.dart';
 import 'package:indikom_app/shared/widgets/promotional_banner.dart';
@@ -33,59 +35,75 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
-      body: BlocBuilder<HomeBloc, HomeState>(
-        builder: (context, state) {
-          if (state is HomeLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: CustomScrollView(
+        slivers: [
+          // Search Bar
+          SliverToBoxAdapter(child: _buildSearchBar()),
 
-          return CustomScrollView(
-            slivers: [
-              // Search Bar
-              SliverToBoxAdapter(child: _buildSearchBar()),
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          // Categories Section
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: _buildCategoriesSection(),
+            ),
+          ),
 
-              // Categories Section
-              SliverToBoxAdapter(
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+          // Promotional Banner - FIXED ✅
+          BlocBuilder<BannerBloc, BannerState>(
+            builder: (context, state) {
+              if (state is BannerLoading) {
+                return SliverToBoxAdapter(
+                  child: Container(
+                    margin: Responsive.horizontalPadding(context, false),
+                    height: 250,
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
+                );
+              }
+
+              if (state is BannerLoaded && state.banners.isNotEmpty) {
+                return SliverToBoxAdapter(
                   child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: _buildCategoriesSection(),
-              )),
+                    padding: const EdgeInsets.all(8.0),
+                    child: BannerCarousel(banners: state.banners),
+                  ),
+                );
+              }
 
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              // Fallback to empty space
+              return const SliverToBoxAdapter(
+                child: SizedBox(height: 250),
+              );
+            },
+          ),
 
-              // Promotional Banner
-              SliverToBoxAdapter(
-                  child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: _buildPromotionalBanner(),
-              )),
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          // Featured Products
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: _buildFeaturedProducts(),
+            ),
+          ),
 
-              // Featured Products
-              SliverToBoxAdapter(
-                  child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: _buildFeaturedProducts(),
-              )),
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          // Sofas Category
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: _buildCategorySection('Sofas'),
+            ),
+          ),
 
-              // Sofas Category
-              SliverToBoxAdapter(
-                  child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: _buildCategorySection('Sofas'),
-              )),
-
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
-            ],
-          );
-        },
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        ],
       ),
-      // bottomNavigationBar: _buildBottomNavigation(),
     );
   }
 

@@ -15,4 +15,6 @@ class Endpoints {
   // Order Endpoints
   static const String orders = '/api/orders/';
   static const String cart = '/api/cart/';
+  // inner banner endpoint
+  static const String banners = '/api/banners/list/';
 }
