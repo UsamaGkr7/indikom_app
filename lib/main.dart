@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:indikom_app/features/home/bloc/home_bloc.dart';
 import 'package:indikom_app/features/home/presentation/bloc/banner_bloc.dart';
+import 'package:indikom_app/features/product/presentation/bloc/product_bloc.dart';
 import 'package:indikom_app/features/profile/presentation/bloc/profile_bloc.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/hive_keys.dart';
@@ -57,6 +58,9 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => ProfileBloc()),
         BlocProvider(
           create: (_) => BannerBloc()..add(LoadBannersEvent()),
+        ),
+        BlocProvider(
+          create: (_) => ProductBloc()..add(LoadProductsEvent()),
         ),
       ],
       child: BlocBuilder<LanguageBloc, LanguageState>(

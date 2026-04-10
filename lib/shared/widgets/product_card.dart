@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/text_styles.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/text_styles.dart';
 
 class ProductCard extends StatelessWidget {
   final String imageUrl;
@@ -9,6 +9,7 @@ class ProductCard extends StatelessWidget {
   final String price;
   final String? originalPrice;
   final String? discount;
+  final VoidCallback? onTap;
 
   const ProductCard({
     super.key,
@@ -17,14 +18,13 @@ class ProductCard extends StatelessWidget {
     required this.price,
     this.originalPrice,
     this.discount,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        // Navigate to product detail
-      },
+      onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -46,20 +46,32 @@ class ProductCard extends StatelessWidget {
               child: ClipRRect(
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(12)),
-                child: CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  placeholder: (context, url) => Container(
-                    color: AppColors.cardBackground,
-                    child: const Center(child: CircularProgressIndicator()),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    color: AppColors.cardBackground,
-                    child: const Icon(Icons.image,
-                        size: 40, color: AppColors.textHint),
-                  ),
-                ),
+                child: imageUrl.startsWith('http')
+                    ? CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        placeholder: (context, url) => Container(
+                          color: AppColors.cardBackground,
+                          child:
+                              const Center(child: CircularProgressIndicator()),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: AppColors.cardBackground,
+                          child: const Icon(Icons.image,
+                              size: 40, color: AppColors.textHint),
+                        ),
+                      )
+                    : Image.asset(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: AppColors.cardBackground,
+                          child: const Icon(Icons.image,
+                              size: 40, color: AppColors.textHint),
+                        ),
+                      ),
               ),
             ),
 

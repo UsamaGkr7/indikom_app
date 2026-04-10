@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:indikom_app/config/routing/route_paths.dart';
 import 'package:indikom_app/features/home/bloc/home_bloc.dart';
 import 'package:indikom_app/features/home/presentation/bloc/banner_bloc.dart';
 import 'package:indikom_app/features/home/presentation/widgets/banner_carousel.dart';
+import 'package:indikom_app/features/product/data/models/product_model.dart';
+import 'package:indikom_app/features/product/presentation/bloc/product_bloc.dart';
 import 'package:indikom_app/shared/widgets/category_card.dart';
 import 'package:indikom_app/shared/widgets/product_card.dart';
 import 'package:indikom_app/shared/widgets/promotional_banner.dart';
@@ -87,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: _buildFeaturedProducts(),
+              child: _buildFeaturedProducts(context),
             ),
           ),
 
@@ -97,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: _buildCategorySection('Sofas'),
+              child: _buildCategorySection('sofas'),
             ),
           ),
 
@@ -113,25 +117,28 @@ class _HomeScreenState extends State<HomeScreen> {
       elevation: 0,
       toolbarHeight: 70,
       leading: Container(),
-      title: Row(
-        children: [
-          Text(
-            'Indi', // ✅ Keep brand name as is (or translate if needed)
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+      title: Directionality(
+        textDirection: TextDirection.ltr,
+        child: Row(
+          children: [
+            Text(
+              'Indi', // ✅ Keep brand name as is (or translate if needed)
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
             ),
-          ),
-          Text(
-            'Kom', // ✅ Keep brand name as is (or translate if needed)
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: AppColors.secondary,
+            Text(
+              'Kom', // ✅ Keep brand name as is (or translate if needed)
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AppColors.secondary,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       actions: [
         // ✅ Language Switcher
@@ -195,25 +202,25 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: Responsive.horizontalPadding(context, false),
             children: [
               CategoryCard(
-                icon: 'assets/icons/sofa.svg',
+                icon: 'assets/images/sofa3.jpeg',
                 label: context.tr('sofas'), // ✅ TRANSLATED
                 onTap: () {},
               ),
               const SizedBox(width: 12),
               CategoryCard(
-                icon: 'assets/icons/door.svg',
+                icon: 'assets/images/door4.jpeg',
                 label: context.tr('doors'), // ✅ TRANSLATED
                 onTap: () {},
               ),
               const SizedBox(width: 12),
               CategoryCard(
-                icon: 'assets/icons/wardrobe.svg',
+                icon: 'assets/images/wardrobe58.jpeg',
                 label: context.tr('wardrobes'), // ✅ TRANSLATED
                 onTap: () {},
               ),
               const SizedBox(width: 12),
               CategoryCard(
-                icon: 'assets/icons/appliance.svg',
+                icon: 'assets/images/appliance.jpeg',
                 label: context.tr('appliances'), // ✅ TRANSLATED
                 onTap: () {},
               ),
@@ -237,25 +244,61 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildFeaturedProducts() {
+  Widget _buildFeaturedProducts(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: Responsive.horizontalPadding(context, false),
           child: SectionHeader(
-            title: context.tr('featured_products'), // ✅ TRANSLATED
-            onSeeAllPressed: () {},
+            title: context.tr('featured_products'),
+            onSeeAllPressed: () {
+              // Navigate to all products
+              context.push(RoutePaths.productList);
+            },
           ),
         ),
         const SizedBox(height: 16),
         Padding(
           padding: Responsive.horizontalPadding(context, false),
-          child: Responsive.isMobile(context)
-              ? _buildProductGrid(2)
-              : Responsive.isTablet(context)
-                  ? _buildProductGrid(3)
-                  : _buildProductGrid(4),
+          child: BlocBuilder<ProductBloc, ProductState>(
+            builder: (context, state) {
+              if (state is ProductLoading) {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+
+              if (state is ProductsLoaded) {
+                final products = state.products.take(4).toList();
+
+                if (products.isEmpty) {
+                  return const Center(
+                    child: Text('No products available'),
+                  );
+                }
+
+                return Responsive.isMobile(context)
+                    ? _buildProductGrid(2, products: products)
+                    : Responsive.isTablet(context)
+                        ? _buildProductGrid(3, products: products)
+                        : _buildProductGrid(4, products: products);
+              }
+
+              if (state is ProductError) {
+                return Center(
+                  child: Text('Error: ${state.message}'),
+                );
+              }
+
+              // Show placeholder products while loading
+              return Responsive.isMobile(context)
+                  ? _buildProductGrid(2)
+                  : Responsive.isTablet(context)
+                      ? _buildProductGrid(3)
+                      : _buildProductGrid(4);
+            },
+          ),
         ),
       ],
     );
@@ -285,7 +328,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildProductGrid(int crossAxisCount) {
+  Widget _buildProductGrid(int crossAxisCount, {List<ProductModel>? products}) {
+    // Use provided products or show placeholders
+    final displayProducts = products ?? [];
+    final isPlaceholder = products == null;
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -295,12 +342,31 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisSpacing: 16,
         childAspectRatio: 0.75,
       ),
-      itemCount: 4,
+      itemCount: isPlaceholder ? 4 : displayProducts.length,
       itemBuilder: (context, index) {
-        return const ProductCard(
-          imageUrl: 'https://via.placeholder.com/200',
-          title: 'Product Name',
-          price: '\$999',
+        if (isPlaceholder) {
+          return const ProductCard(
+            imageUrl: 'https://via.placeholder.com/200',
+            title: 'Product Name',
+            price: '\$999',
+          );
+        }
+
+        final product = displayProducts[index];
+        return ProductCard(
+          imageUrl: product.imageUrl ?? 'https://via.placeholder.com/200',
+          title: product.name,
+          price: '\$${product.price}',
+          originalPrice: product.originalPrice != null
+              ? '\$${product.originalPrice}'
+              : null,
+          discount: product.discount != null
+              ? '${product.discount!.toStringAsFixed(0)}% OFF'
+              : null,
+          onTap: () {
+            // Navigate to product detail
+            // context.push(RoutePaths.productDetail, extra: product);
+          },
         );
       },
     );

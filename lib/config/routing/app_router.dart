@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:indikom_app/features/product/presentation/screens/product_list_screen.dart';
 import 'package:indikom_app/features/profile/presentation/profile_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/otp_verification_screen.dart';
@@ -67,6 +68,17 @@ class AppRouter {
             return OtpVerificationScreen(
               phoneNumber: extra?['phoneNumber'] ?? '',
               otpFromApi: extra?['otpFromApi']?.toString(), // ✅ ADD THIS LINE
+            );
+          },
+        ),
+        GoRoute(
+          path: RoutePaths.productList,
+          builder: (context, state) {
+            final category = state.uri.queryParameters['category'];
+            final searchQuery = state.uri.queryParameters['search'];
+            return ProductListScreen(
+              category: category,
+              searchQuery: searchQuery,
             );
           },
         ),
