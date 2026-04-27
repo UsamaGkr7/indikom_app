@@ -38,18 +38,18 @@ class ProductRepository {
   }
 
   // Fetch products by category
-  Future<List<ProductModel>> fetchProductsByCategory(String category) async {
-    try {
-      final products = await fetchProducts();
-      return products
-          .where((product) =>
-              product.category?.toLowerCase() == category.toLowerCase())
-          .toList();
-    } catch (e) {
-      print('❌ Error fetching products by category: $e');
-      throw Exception('Failed to load products: $e');
-    }
-  }
+  // Future<List<ProductModel>> fetchProductsByCategory(String category) async {
+  //   try {
+  //     final products = await fetchProducts();
+  //     return products
+  //         .where((product) =>
+  //             product.category?.toLowerCase() == category.toLowerCase())
+  //         .toList();
+  //   } catch (e) {
+  //     print('❌ Error fetching products by category: $e');
+  //     throw Exception('Failed to load products: $e');
+  //   }
+  // }
 
   // Fetch single product
   Future<ProductModel> fetchProductById(int id) async {

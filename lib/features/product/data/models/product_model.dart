@@ -8,9 +8,9 @@ class ProductModel {
   final DateTime createdAt;
   final DateTime updatedAt;
   final int supplier;
-  final String? imageUrl;
-  final String? category;
-  final List<String>? images;
+  final int? categoryId; // ✅ Changed: category ID as int
+  final String? categoryName; // ✅ Added: category name (if available)
+  final String? imageUrl; // ✅ Changed: from 'file' field
   final double? rating;
   final int? reviewCount;
   final double? originalPrice;
@@ -26,9 +26,9 @@ class ProductModel {
     required this.createdAt,
     required this.updatedAt,
     required this.supplier,
+    this.categoryId,
+    this.categoryName,
     this.imageUrl,
-    this.category,
-    this.images,
     this.rating,
     this.reviewCount,
     this.originalPrice,
@@ -36,17 +36,29 @@ class ProductModel {
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
-    // Parse price to calculate discount if needed
-    double priceValue = double.tryParse(json['price'].toString()) ?? 0.0;
-    double? originalPrice;
-    double? discount;
+    // Parse price
+    double priceValue =
+        double.tryParse(json['price']?.toString() ?? '0') ?? 0.0;
 
-    // You can add logic here if API provides original price
-    // For now, using placeholder logic
-    if (json['original_price'] != null) {
-      originalPrice = double.tryParse(json['original_price'].toString());
-      if (originalPrice != null && originalPrice > priceValue) {
-        discount = ((originalPrice - priceValue) / originalPrice) * 100;
+    // Handle category - can be int (ID) or Map (nested object)
+    int? categoryId;
+    String? categoryName;
+
+    final categoryData = json['category'];
+    if (categoryData is int) {
+      categoryId = categoryData;
+    } else if (categoryData is Map) {
+      categoryId = categoryData['id'];
+      categoryName = categoryData['name'];
+    }
+
+    // Handle image URL - 'file' field can be null or full URL
+    String? imageUrl = json['file'];
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      // ✅ Fix mixed base URLs (127.0.0.1 vs 192.168.x.x)
+      if (imageUrl.startsWith('http://127.0.0.1')) {
+        imageUrl = imageUrl.replaceAll(
+            'http://127.0.0.1:8000', 'http://192.168.0.102:8000');
       }
     }
 
@@ -60,15 +72,19 @@ class ProductModel {
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
       supplier: json['supplier'] ?? 0,
-      imageUrl: json['image'] ?? json['imageUrl'],
-      category: json['category'] ?? json['category_name'],
-      images: json['images'] != null ? List<String>.from(json['images']) : null,
+      categoryId: categoryId,
+      categoryName: categoryName,
+      imageUrl: imageUrl,
       rating: json['rating'] != null
           ? double.tryParse(json['rating'].toString())
           : null,
       reviewCount: json['review_count'],
-      originalPrice: originalPrice,
-      discount: discount,
+      originalPrice: json['original_price'] != null
+          ? double.tryParse(json['original_price'].toString())
+          : null,
+      discount: json['discount'] != null
+          ? double.tryParse(json['discount'].toString())
+          : null,
     );
   }
 
@@ -83,8 +99,8 @@ class ProductModel {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
       'supplier': supplier,
-      if (imageUrl != null) 'image': imageUrl,
-      if (category != null) 'category': category,
+      if (categoryId != null) 'category': categoryId,
+      if (imageUrl != null) 'file': imageUrl,
     };
   }
 }

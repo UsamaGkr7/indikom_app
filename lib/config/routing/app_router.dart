@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:indikom_app/core/utils/extensions.dart';
 import 'package:indikom_app/features/auth/presentation/screens/splash_screen.dart';
+import 'package:indikom_app/features/product/data/models/product_model.dart';
+import 'package:indikom_app/features/product/presentation/screens/product_detail_screen.dart';
 import 'package:indikom_app/features/product/presentation/screens/product_list_screen.dart';
 import 'package:indikom_app/features/profile/presentation/profile_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
@@ -89,6 +91,13 @@ class AppRouter {
               category: category,
               searchQuery: searchQuery,
             );
+          },
+        ),
+        GoRoute(
+          path: RoutePaths.productDetail,
+          builder: (context, state) {
+            final product = state.extra as ProductModel;
+            return ProductDetailScreen(product: product);
           },
         ),
 

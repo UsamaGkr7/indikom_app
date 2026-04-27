@@ -364,8 +364,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ? '${product.discount!.toStringAsFixed(0)}% OFF'
               : null,
           onTap: () {
-            // Navigate to product detail
-            // context.push(RoutePaths.productDetail, extra: product);
+            context.push(RoutePaths.productDetail, extra: product);
           },
         );
       },

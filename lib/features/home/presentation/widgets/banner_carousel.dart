@@ -53,7 +53,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
           options: CarouselOptions(
             height: 250,
             viewportFraction: 1.0,
-            enlargeCenterPage: false,
+            enlargeCenterPage: true,
             autoPlay: true,
             autoPlayInterval: const Duration(seconds: 4),
             autoPlayAnimationDuration: const Duration(milliseconds: 800),
@@ -97,8 +97,6 @@ class _BannerCarouselState extends State<BannerCarousel> {
       // Only prepend base URL if it's a relative path
       imageUrl = '${Endpoints.baseUrl}$imageUrl';
     }
-
-    print('🖼️ Final Image URL: $imageUrl');
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8),

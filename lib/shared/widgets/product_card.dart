@@ -4,7 +4,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/text_styles.dart';
 
 class ProductCard extends StatelessWidget {
-  final String imageUrl;
+  final String? imageUrl; // ✅ Made nullable
   final String title;
   final String price;
   final String? originalPrice;
@@ -13,7 +13,7 @@ class ProductCard extends StatelessWidget {
 
   const ProductCard({
     super.key,
-    required this.imageUrl,
+    this.imageUrl, // ✅ Optional now
     required this.title,
     required this.price,
     this.originalPrice,
@@ -46,32 +46,7 @@ class ProductCard extends StatelessWidget {
               child: ClipRRect(
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(12)),
-                child: imageUrl.startsWith('http')
-                    ? CachedNetworkImage(
-                        imageUrl: imageUrl,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        placeholder: (context, url) => Container(
-                          color: AppColors.cardBackground,
-                          child:
-                              const Center(child: CircularProgressIndicator()),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          color: AppColors.cardBackground,
-                          child: const Icon(Icons.image,
-                              size: 40, color: AppColors.textHint),
-                        ),
-                      )
-                    : Image.asset(
-                        imageUrl,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: AppColors.cardBackground,
-                          child: const Icon(Icons.image,
-                              size: 40, color: AppColors.textHint),
-                        ),
-                      ),
+                child: _buildProductImage(),
               ),
             ),
 
@@ -140,6 +115,66 @@ class ProductCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  // ✅ Helper method to build product image with null handling
+  Widget _buildProductImage() {
+    // Show placeholder if imageUrl is null or empty
+    if (imageUrl == null || imageUrl!.isEmpty) {
+      return Container(
+        color: AppColors.cardBackground,
+        child: const Center(
+          child: Icon(
+            Icons.image_not_supported,
+            size: 50,
+            color: AppColors.textHint,
+          ),
+        ),
+      );
+    }
+
+    // Load network image
+    return CachedNetworkImage(
+      imageUrl: imageUrl!,
+      fit: BoxFit.contain,
+      width: double.infinity,
+      placeholder: (context, url) => Container(
+        color: AppColors.cardBackground,
+        child: const Center(
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+          ),
+        ),
+      ),
+      errorWidget: (context, url, error) {
+        print('❌ Product image load error: $error');
+        print('❌ URL: $url');
+        return Container(
+          color: AppColors.cardBackground,
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.broken_image,
+                  size: 40,
+                  color: AppColors.textHint,
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'No Image',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: AppColors.textHint,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

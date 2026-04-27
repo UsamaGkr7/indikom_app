@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:indikom_app/config/routing/route_paths.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../core/utils/responsive_utils.dart';
@@ -56,10 +57,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
               .toLowerCase()
               .contains(_searchController.text.toLowerCase());
 
-      final categoryMatch = widget.category == null ||
-          product.category?.toLowerCase() == widget.category!.toLowerCase();
+      // final categoryMatch = widget.category == null ||
+      //     product.category?.toLowerCase() == widget.category!.toLowerCase();
 
-      return searchMatch && categoryMatch;
+      // return searchMatch && categoryMatch;
+      return searchMatch;
     }).toList();
 
     // 2. Sort
@@ -379,7 +381,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
               ? '${product.discount!.toStringAsFixed(0)}% OFF'
               : null,
           onTap: () {
-            // Navigate to product detail
+            context.push(RoutePaths.productDetail, extra: product);
           },
         );
       },
@@ -444,13 +446,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
-                      if (product.category != null)
-                        Text(
-                          product.category!,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
+                      // if (product.category != null)
+                      //   Text(
+                      //     product.category!,
+                      //     style: AppTextStyles.bodySmall.copyWith(
+                      //       color: AppColors.textSecondary,
+                      //     ),
+                      //   ),
                       const Spacer(),
                       Row(
                         children: [

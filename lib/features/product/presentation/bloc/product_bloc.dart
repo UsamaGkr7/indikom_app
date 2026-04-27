@@ -78,7 +78,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       : _productRepository = productRepository ?? ProductRepository(),
         super(ProductInitial()) {
     on<LoadProductsEvent>(_onLoadProducts);
-    on<LoadProductsByCategoryEvent>(_onLoadProductsByCategory);
+    // on<LoadProductsByCategoryEvent>(_onLoadProductsByCategory);
     on<LoadProductByIdEvent>(_onLoadProductById);
   }
 
@@ -96,20 +96,20 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     }
   }
 
-  Future<void> _onLoadProductsByCategory(
-    LoadProductsByCategoryEvent event,
-    Emitter<ProductState> emit,
-  ) async {
-    emit(ProductLoading());
+  // Future<void> _onLoadProductsByCategory(
+  //   LoadProductsByCategoryEvent event,
+  //   Emitter<ProductState> emit,
+  // ) async {
+  //   emit(ProductLoading());
 
-    try {
-      final products =
-          await _productRepository.fetchProductsByCategory(event.category);
-      emit(ProductsLoaded(products: products));
-    } catch (e) {
-      emit(ProductError(message: e.toString()));
-    }
-  }
+  //   try {
+  //     final products =
+  //         await _productRepository.fetchProductsByCategory(event.category);
+  //     emit(ProductsLoaded(products: products));
+  //   } catch (e) {
+  //     emit(ProductError(message: e.toString()));
+  //   }
+  // }
 
   Future<void> _onLoadProductById(
     LoadProductByIdEvent event,
