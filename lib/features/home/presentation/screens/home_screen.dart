@@ -1,3 +1,4 @@
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import 'package:indikom_app/features/home/presentation/bloc/banner_bloc.dart';
 import 'package:indikom_app/features/home/presentation/widgets/banner_carousel.dart';
 import 'package:indikom_app/features/product/data/models/product_model.dart';
 import 'package:indikom_app/features/product/presentation/bloc/product_bloc.dart';
+import 'package:indikom_app/features/product/presentation/screens/product_detail_screen.dart';
 import 'package:indikom_app/shared/widgets/category_card.dart';
 import 'package:indikom_app/shared/widgets/product_card.dart';
 import 'package:indikom_app/shared/widgets/promotional_banner.dart';
@@ -329,7 +331,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildProductGrid(int crossAxisCount, {List<ProductModel>? products}) {
-    // Use provided products or show placeholders
     final displayProducts = products ?? [];
     final isPlaceholder = products == null;
 
@@ -353,19 +354,46 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         final product = displayProducts[index];
-        return ProductCard(
-          imageUrl: product.imageUrl ?? 'https://via.placeholder.com/200',
-          title: product.name,
-          price: '\$${product.price}',
-          originalPrice: product.originalPrice != null
-              ? '\$${product.originalPrice}'
-              : null,
-          discount: product.discount != null
-              ? '${product.discount!.toStringAsFixed(0)}% OFF'
-              : null,
-          onTap: () {
-            context.push(RoutePaths.productDetail, extra: product);
+
+        // ✅ WRAP WITH OpenContainer FOR ANIMATION
+        return OpenContainer(
+          transitionType: ContainerTransitionType.fadeThrough,
+          transitionDuration: const Duration(milliseconds: 900),
+
+          // Screen that opens
+          openBuilder: (BuildContext context, VoidCallback _) {
+            return ProductDetailScreen(product: product);
           },
+
+          // Widget user taps (ProductCard)
+          closedBuilder: (BuildContext context, VoidCallback openContainer) {
+            return GestureDetector(
+              onTap:
+                  openContainer, // ✅ Call this to trigger animation + navigation
+              child: ProductCard(
+                productId: product.id,
+                imageUrl: product.imageUrl ?? 'https://via.placeholder.com/200',
+                title: product.name,
+                price: '\$${product.price}',
+                originalPrice: product.originalPrice != null
+                    ? '\$${product.originalPrice}'
+                    : null,
+                discount: product.discount != null
+                    ? '${product.discount!.toStringAsFixed(0)}% OFF'
+                    : null,
+              ),
+            );
+          },
+
+          // Optional styling
+          closedElevation: 0,
+          openElevation: 0,
+          closedShape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          closedColor: Colors.transparent,
+          tappable:
+              false, // ✅ Set to false since we handle tap in closedBuilder
         );
       },
     );

@@ -1,3 +1,4 @@
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:indikom_app/core/utils/extensions.dart';
@@ -95,9 +96,23 @@ class AppRouter {
         ),
         GoRoute(
           path: RoutePaths.productDetail,
-          builder: (context, state) {
+          pageBuilder: (context, state) {
             final product = state.extra as ProductModel;
-            return ProductDetailScreen(product: product);
+
+            return CustomTransitionPage(
+              key: state.pageKey,
+              child: ProductDetailScreen(product: product),
+              transitionDuration: const Duration(milliseconds: 500),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                return SharedAxisTransition(
+                  animation: animation,
+                  secondaryAnimation: secondaryAnimation,
+                  transitionType: SharedAxisTransitionType.vertical,
+                  child: child,
+                );
+              },
+            );
           },
         ),
 

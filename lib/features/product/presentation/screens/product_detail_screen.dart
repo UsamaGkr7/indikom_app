@@ -133,22 +133,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               },
               itemBuilder: (context, index) {
                 return ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: CachedNetworkImage(
-                    imageUrl: images[index] ?? '',
-                    fit: BoxFit.contain,
-                    width: double.infinity,
-                    placeholder: (context, url) => Container(
-                      color: AppColors.cardBackground,
-                      child: const Center(child: CircularProgressIndicator()),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: AppColors.cardBackground,
-                      child: const Icon(Icons.image,
-                          size: 60, color: AppColors.textHint),
-                    ),
-                  ),
-                );
+                    borderRadius: BorderRadius.circular(16),
+                    child: Hero(
+                      // ✅ Add Hero widget for smooth image transition
+                      tag: 'product_image_${widget.product.id}',
+                      child: CachedNetworkImage(
+                        imageUrl: images[index] ?? '',
+                        fit: BoxFit.contain,
+                        width: double.infinity,
+                        placeholder: (context, url) => Container(
+                          color: AppColors.cardBackground,
+                          child:
+                              const Center(child: CircularProgressIndicator()),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: AppColors.cardBackground,
+                          child: const Icon(Icons.image,
+                              size: 60, color: AppColors.textHint),
+                        ),
+                      ),
+                    ));
               },
             ),
 

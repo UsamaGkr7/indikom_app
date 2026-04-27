@@ -1,7 +1,9 @@
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:indikom_app/config/routing/route_paths.dart';
+import 'package:indikom_app/features/product/presentation/screens/product_detail_screen.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../core/utils/responsive_utils.dart';
@@ -370,19 +372,45 @@ class _ProductListScreenState extends State<ProductListScreen> {
       itemCount: products.length,
       itemBuilder: (context, index) {
         final product = products[index];
-        return ProductCard(
-          imageUrl: product.imageUrl ?? 'https://via.placeholder.com/200',
-          title: product.name,
-          price: '\$${product.price}',
-          originalPrice: product.originalPrice != null
-              ? '\$${product.originalPrice}'
-              : null,
-          discount: product.discount != null
-              ? '${product.discount!.toStringAsFixed(0)}% OFF'
-              : null,
-          onTap: () {
-            context.push(RoutePaths.productDetail, extra: product);
+
+        // ✅ CORRECT: Use closedBuilder instead of child
+        return OpenContainer(
+          transitionType: ContainerTransitionType.fadeThrough,
+          transitionDuration: const Duration(milliseconds: 400),
+
+          // ✅ Screen that opens (Product Detail)
+          openBuilder: (BuildContext context, VoidCallback _) {
+            return ProductDetailScreen(product: product);
           },
+
+          // ✅ Widget that user taps (Product Card) - REQUIRED
+          closedBuilder: (BuildContext context, VoidCallback openContainer) {
+            return GestureDetector(
+              onTap: openContainer, // ✅ Call this to open the detail screen
+              child: ProductCard(
+                imageUrl: product.imageUrl,
+                title: product.name,
+                price: '\$${product.price}',
+                originalPrice: product.originalPrice != null
+                    ? '\$${product.originalPrice}'
+                    : null,
+                discount: product.discount != null
+                    ? '${product.discount!.toStringAsFixed(0)}% OFF'
+                    : null,
+                productId: product.id,
+              ),
+            );
+          },
+
+          // ✅ Optional styling
+          closedElevation: 0,
+          openElevation: 0,
+          closedShape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          closedColor: Colors.transparent,
+          tappable:
+              false, // ✅ Set to false since we handle tap in closedBuilder
         );
       },
     );
@@ -394,93 +422,118 @@ class _ProductListScreenState extends State<ProductListScreen> {
       itemCount: products.length,
       itemBuilder: (context, index) {
         final product = products[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            children: [
-              // Product Image
-              ClipRRect(
-                borderRadius:
-                    const BorderRadius.horizontal(left: Radius.circular(12)),
-                child: product.imageUrl != null
-                    ? Image.network(
-                        product.imageUrl!,
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          width: 120,
-                          height: 120,
-                          color: AppColors.cardBackground,
-                          child: const Icon(Icons.image,
-                              size: 40, color: AppColors.textHint),
-                        ),
-                      )
-                    : Container(
-                        width: 120,
-                        height: 120,
-                        color: AppColors.cardBackground,
-                        child: const Icon(Icons.image,
-                            size: 40, color: AppColors.textHint),
-                      ),
-              ),
 
-              // Product Info
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product.name,
-                        style: AppTextStyles.bodyLarge.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      // if (product.category != null)
-                      //   Text(
-                      //     product.category!,
-                      //     style: AppTextStyles.bodySmall.copyWith(
-                      //       color: AppColors.textSecondary,
-                      //     ),
-                      //   ),
-                      const Spacer(),
-                      Row(
-                        children: [
-                          Text(
-                            '\$${product.price}',
-                            style: AppTextStyles.h3.copyWith(
-                              color: AppColors.primary,
-                              fontSize: 18,
-                            ),
-                          ),
-                          if (product.originalPrice != null) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              '\$${product.originalPrice}',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                decoration: TextDecoration.lineThrough,
-                                color: AppColors.textHint,
+        return OpenContainer(
+          transitionType: ContainerTransitionType.fadeThrough,
+          transitionDuration: const Duration(milliseconds: 400),
+
+          openBuilder: (BuildContext context, VoidCallback _) {
+            return ProductDetailScreen(product: product);
+          },
+
+          // ✅ closedBuilder for list items
+          closedBuilder: (BuildContext context, VoidCallback openContainer) {
+            return GestureDetector(
+              onTap: openContainer,
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  children: [
+                    // Product Image
+                    ClipRRect(
+                      borderRadius: const BorderRadius.horizontal(
+                          left: Radius.circular(12)),
+                      child: product.imageUrl != null
+                          ? Image.network(
+                              product.imageUrl!,
+                              width: 120,
+                              height: 120,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                width: 120,
+                                height: 120,
+                                color: AppColors.cardBackground,
+                                child: const Icon(Icons.image,
+                                    size: 40, color: AppColors.textHint),
                               ),
+                            )
+                          : Container(
+                              width: 120,
+                              height: 120,
+                              color: AppColors.cardBackground,
+                              child: const Icon(Icons.image,
+                                  size: 40, color: AppColors.textHint),
+                            ),
+                    ),
+
+                    // Product Info
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              product.name,
+                              style: AppTextStyles.bodyLarge.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            // if (product.category != null)
+                            //   Text(
+                            //     product.category!,
+                            //     style: AppTextStyles.bodySmall.copyWith(
+                            //       color: AppColors.textSecondary,
+                            //     ),
+                            //   ),
+                            const Spacer(),
+                            Row(
+                              children: [
+                                Text(
+                                  '\$${product.price}',
+                                  style: AppTextStyles.h3.copyWith(
+                                    color: AppColors.primary,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                if (product.originalPrice != null) ...[
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '\$${product.originalPrice}',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      decoration: TextDecoration.lineThrough,
+                                      color: AppColors.textHint,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ],
-                        ],
+                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            );
+          },
+
+          closedElevation: 0,
+          openElevation: 0,
+          closedShape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
+          closedColor: Colors.transparent,
+          tappable: false,
         );
       },
     );

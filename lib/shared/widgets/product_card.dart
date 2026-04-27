@@ -10,16 +10,17 @@ class ProductCard extends StatelessWidget {
   final String? originalPrice;
   final String? discount;
   final VoidCallback? onTap;
+  final int? productId;
 
-  const ProductCard({
-    super.key,
-    this.imageUrl, // ✅ Optional now
-    required this.title,
-    required this.price,
-    this.originalPrice,
-    this.discount,
-    this.onTap,
-  });
+  const ProductCard(
+      {super.key,
+      this.imageUrl, // ✅ Optional now
+      required this.title,
+      required this.price,
+      this.originalPrice,
+      this.discount,
+      this.onTap,
+      this.productId});
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +47,9 @@ class ProductCard extends StatelessWidget {
               child: ClipRRect(
                 borderRadius:
                     const BorderRadius.vertical(top: Radius.circular(12)),
-                child: _buildProductImage(),
+                child: Hero(
+                    tag: 'product_image_${productId ?? title.hashCode}',
+                    child: _buildProductImage()),
               ),
             ),
 
