@@ -52,8 +52,9 @@ class _BannerCarouselState extends State<BannerCarousel> {
           carouselController: _carouselController,
           options: CarouselOptions(
             height: 250,
-            viewportFraction: 1.0,
-            enlargeCenterPage: true,
+            viewportFraction: 0.80,
+            enlargeCenterPage: true, // 👈 center big
+            enlargeFactor: 0.15, // 👈 scaling
             autoPlay: true,
             autoPlayInterval: const Duration(seconds: 4),
             autoPlayAnimationDuration: const Duration(milliseconds: 800),

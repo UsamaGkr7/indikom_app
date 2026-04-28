@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:indikom_app/core/utils/snackbar_helper.dart';
 import 'dart:async';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
@@ -79,20 +80,26 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     }
 
     // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.auto_awesome, color: Colors.white),
-            const SizedBox(width: 8),
-            Text('OTP auto-filled: $otp'),
-          ],
-        ),
-        backgroundColor: AppColors.success,
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
+    SnackbarHelper.info(
+      context,
+      'OTP $otp has been auto-filled',
+      title: 'Auto-Fill Enabled',
+      duration: const Duration(seconds: 2),
     );
+    // ScaffoldMessenger.of(context).showSnackBar(
+    //   SnackBar(
+    //     content: Row(
+    //       children: [
+    //         const Icon(Icons.auto_awesome, color: Colors.white),
+    //         const SizedBox(width: 8),
+    //         Text('OTP auto-filled: $otp'),
+    //       ],
+    //     ),
+    //     backgroundColor: AppColors.success,
+    //     duration: const Duration(seconds: 2),
+    //     behavior: SnackBarBehavior.floating,
+    //   ),
+    // );
 
     // Auto-focus last field
     _focusNodes[5].requestFocus();
@@ -131,11 +138,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             ),
           );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please enter complete 6-digit OTP'),
-          backgroundColor: AppColors.error,
-        ),
+      SnackbarHelper.warning(
+        context,
+        'Please enter all 6 digits of the OTP',
+        title: 'Incomplete OTP',
       );
     }
   }
@@ -288,13 +294,21 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
                   if (state is AuthAuthenticated) {
                     // ✅ Navigate to home
-                    context.pushReplacement(RoutePaths.home);
+                    SnackbarHelper.success(
+                      context,
+                      'Welcome to IndiKom!',
+                      title: 'Login Successful',
+                      duration: const Duration(seconds: 2),
+                    );
+                    Future.delayed(const Duration(milliseconds: 800), () {
+                      context.pushReplacement(RoutePaths.home);
+                    });
                   } else if (state is AuthError) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(state.message),
-                        backgroundColor: AppColors.error,
-                      ),
+                    SnackbarHelper.error(
+                      context,
+                      state.message,
+                      title: 'Verification Failed',
+                      duration: const Duration(seconds: 5),
                     );
                   }
                 },

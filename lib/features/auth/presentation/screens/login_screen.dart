@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:indikom_app/core/utils/snackbar_helper.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../config/routing/route_paths.dart';
@@ -191,6 +192,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             });
 
                             if (state is AuthOtpSent) {
+                              SnackbarHelper.success(
+                                context,
+                                'OTP sent to ${_phoneController.text}',
+                                title: 'Verification Code Sent',
+                              );
+
                               // ✅ Navigate to OTP screen
                               context.push(
                                 RoutePaths.otp,
@@ -201,11 +208,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                 },
                               );
                             } else if (state is AuthError) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(state.message),
-                                  backgroundColor: AppColors.error,
-                                ),
+                              SnackbarHelper.error(
+                                context,
+                                state.message,
+                                title: 'Authentication Failed',
+                                duration: const Duration(seconds: 5),
                               );
                             }
                           },

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:indikom_app/core/utils/snackbar_helper.dart';
 import 'package:indikom_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:indikom_app/features/profile/presentation/bloc/language_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -310,13 +311,10 @@ class ProfileScreen extends StatelessWidget {
     // ✅ Navigate to login screen
     context.go(RoutePaths.login);
 
-    // ✅ Show logout success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Logged out successfully'),
-        backgroundColor: AppColors.success,
-        duration: const Duration(seconds: 2),
-      ),
+    SnackbarHelper.info(
+      context,
+      'You have been logged out successfully',
+      title: 'Logged Out',
     );
   }
 }
