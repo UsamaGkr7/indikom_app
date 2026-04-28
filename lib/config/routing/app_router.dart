@@ -14,111 +14,146 @@ import '../../layouts/responsive_shell.dart';
 import 'route_paths.dart';
 
 class AppRouter {
-  // ✅ Singleton - Create ONCE
   static final AppRouter _instance = AppRouter._internal();
   factory AppRouter() => _instance;
   AppRouter._internal();
 
   late final GoRouter router;
-
-  // ✅ Auth state notifier
   final ValueNotifier<bool> _authStateNotifier = ValueNotifier<bool>(false);
 
-  // ✅ Initialize once with auth stream
   void initialize() {
     router = GoRouter(
       initialLocation: RoutePaths.splash,
-
-      // ✅ Listen to auth state changes ONLY
       refreshListenable: _authStateNotifier,
-
       redirect: (context, state) {
         final isLoggedIn = _authStateNotifier.value;
         final location = state.uri.toString();
 
-        // ✅ ALWAYS allow splash to load first (don't redirect from splash)
-        if (location == RoutePaths.splash) {
+        if (location == RoutePaths.splash) return null;
+        if (location.contains('settings') || location.contains('profile'))
           return null;
-        }
 
-        // ✅ Don't redirect on language/settings pages
-        if (location.contains('settings') || location.contains('profile')) {
-          return null;
-        }
-
-        // Public routes (login, otp) - redirect to home if already logged in
         if (location == RoutePaths.login || location == RoutePaths.otp) {
           if (isLoggedIn) return RoutePaths.home;
           return null;
         }
 
-        // Protected routes - redirect to login if not logged in
-        if (!isLoggedIn) {
-          return RoutePaths.login;
-        }
-
+        if (!isLoggedIn) return RoutePaths.login;
         return null;
       },
-
       routes: [
-        // ✅ Splash route (ONLY ONCE)
+        // ✅ STANDALONE ROUTES - Use pageBuilder for animations
+
         GoRoute(
           path: RoutePaths.splash,
-          builder: (context, state) => const SplashScreen(),
+          pageBuilder: (context, state) => CustomTransitionPage<void>(
+            key: state.pageKey,
+            child: const SplashScreen(),
+            transitionDuration: const Duration(milliseconds: 500),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          ),
         ),
 
         GoRoute(
           path: RoutePaths.login,
-          builder: (context, state) => const LoginScreen(),
+          pageBuilder: (context, state) => CustomTransitionPage<void>(
+            key: state.pageKey,
+            child: const LoginScreen(),
+            transitionDuration: const Duration(milliseconds: 400),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0.1, 0),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: FadeTransition(opacity: animation, child: child),
+              );
+            },
+          ),
         ),
 
         GoRoute(
           path: RoutePaths.otp,
-          builder: (context, state) {
-            final extra = state.extra as Map<String, dynamic>?;
-            return OtpVerificationScreen(
-              phoneNumber: extra?['phoneNumber'] ?? '',
-              otpFromApi: extra?['otpFromApi']?.toString(),
-            );
-          },
+          pageBuilder: (context, state) => CustomTransitionPage<void>(
+            key: state.pageKey,
+            child: OtpVerificationScreen(
+              phoneNumber:
+                  (state.extra as Map<String, dynamic>?)?['phoneNumber'] ?? '',
+              otpFromApi: (state.extra as Map<String, dynamic>?)?['otpFromApi']
+                  ?.toString(),
+            ),
+            transitionDuration: const Duration(milliseconds: 400),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.1),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: FadeTransition(opacity: animation, child: child),
+              );
+            },
+          ),
         ),
 
         GoRoute(
           path: RoutePaths.productList,
-          builder: (context, state) {
-            final category = state.uri.queryParameters['category'];
-            final searchQuery = state.uri.queryParameters['search'];
-            return ProductListScreen(
-              category: category,
-              searchQuery: searchQuery,
-            );
-          },
+          pageBuilder: (context, state) => CustomTransitionPage<void>(
+            key: state.pageKey,
+            child: ProductListScreen(
+              category: state.uri.queryParameters['category'],
+              searchQuery: state.uri.queryParameters['search'],
+            ),
+            transitionDuration: const Duration(milliseconds: 400),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(1, 0),
+                  end: Offset.zero,
+                ).animate(animation),
+                child: child,
+              );
+            },
+          ),
         ),
+
         GoRoute(
           path: RoutePaths.productDetail,
-          pageBuilder: (context, state) {
-            final product = state.extra as ProductModel;
-
-            return CustomTransitionPage(
-              key: state.pageKey,
-              child: ProductDetailScreen(product: product),
-              transitionDuration: const Duration(milliseconds: 500),
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                return SharedAxisTransition(
-                  animation: animation,
-                  secondaryAnimation: secondaryAnimation,
-                  transitionType: SharedAxisTransitionType.vertical,
-                  child: child,
-                );
-              },
-            );
-          },
+          pageBuilder: (context, state) => CustomTransitionPage<void>(
+            key: state.pageKey,
+            child: ProductDetailScreen(product: state.extra as ProductModel),
+            transitionDuration: const Duration(milliseconds: 500),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return SharedAxisTransition(
+                animation: animation,
+                secondaryAnimation: secondaryAnimation,
+                transitionType: SharedAxisTransitionType.vertical,
+                child: child,
+              );
+            },
+          ),
         ),
 
+        // ✅ SHELL ROUTE - Use builder (NOT pageBuilder) to preserve bottom nav
         ShellRoute(
-          builder: (context, state, child) => ResponsiveShell(child: child),
+          builder: (context, state, child) {
+            // ✅ Add animation HERE for shell child transitions
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, animation) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              child: ResponsiveShell(child: child),
+            );
+          },
           routes: [
+            // ✅ Use builder (not pageBuilder) for shell children
             GoRoute(
               path: RoutePaths.home,
               builder: (context, state) => const HomeScreen(),

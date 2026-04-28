@@ -376,7 +376,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
         // ✅ CORRECT: Use closedBuilder instead of child
         return OpenContainer(
           transitionType: ContainerTransitionType.fadeThrough,
-          transitionDuration: const Duration(milliseconds: 400),
+          transitionDuration: const Duration(milliseconds: 900),
 
           // ✅ Screen that opens (Product Detail)
           openBuilder: (BuildContext context, VoidCallback _) {
