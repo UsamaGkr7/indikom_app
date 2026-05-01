@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:indikom_app/config/routing/route_paths.dart';
+import 'package:indikom_app/features/category/presentation/bloc/category_bloc.dart';
 import 'package:indikom_app/features/home/bloc/home_bloc.dart';
 import 'package:indikom_app/features/home/presentation/bloc/banner_bloc.dart';
 import 'package:indikom_app/features/home/presentation/widgets/banner_carousel.dart';
@@ -35,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<HomeBloc>().add(LoadHomeDataEvent());
+      context.read<CategoryBloc>().add(LoadCategoriesEvent());
     });
   }
 
@@ -234,10 +236,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCategoriesSection() {
-    return BlocBuilder<BannerBloc, BannerState>(
+    return BlocBuilder<CategoryBloc, CategoryState>(
       builder: (context, state) {
-        // Show shimmer for categories while banners load
-        if (state is BannerLoading) {
+        // ✅ Show shimmer while loading
+        if (state is CategoryLoading) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -268,52 +270,75 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
 
-        // Actual categories content
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: Responsive.horizontalPadding(context, false),
-              child: Text(
-                context.tr('categories'),
-                style: AppTextStyles.h3,
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 110,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
+        // ✅ Show error state
+        if (state is CategoryError) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
                 padding: Responsive.horizontalPadding(context, false),
-                children: [
-                  CategoryCard(
-                    icon: 'assets/images/sofa3.jpeg',
-                    label: context.tr('sofas'),
-                    onTap: () {},
-                  ),
-                  const SizedBox(width: 12),
-                  CategoryCard(
-                    icon: 'assets/images/door4.jpeg',
-                    label: context.tr('doors'),
-                    onTap: () {},
-                  ),
-                  const SizedBox(width: 12),
-                  CategoryCard(
-                    icon: 'assets/images/wardrobe58.jpeg',
-                    label: context.tr('wardrobes'),
-                    onTap: () {},
-                  ),
-                  const SizedBox(width: 12),
-                  CategoryCard(
-                    icon: 'assets/images/appliance.jpeg',
-                    label: context.tr('appliances'),
-                    onTap: () {},
-                  ),
-                ],
+                child: Text(
+                  context.tr('categories'),
+                  style: AppTextStyles.h3,
+                ),
               ),
-            ),
-          ],
-        );
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 110,
+                child: Center(
+                  child: Text(
+                    'Failed to load categories',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.error,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }
+
+        // ✅ Show actual categories
+        if (state is CategoriesLoaded && state.categories.isNotEmpty) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: Responsive.horizontalPadding(context, false),
+                child: Text(
+                  context.tr('categories'),
+                  style: AppTextStyles.h3,
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 110,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: Responsive.horizontalPadding(context, false),
+                  children: state.categories.map((category) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: CategoryCard(
+                        imageUrl: category.thumbnail,
+                        label: category.name,
+                        onTap: () {
+                          // ✅ Navigate to product list filtered by category
+                          context.push(
+                            '${RoutePaths.productList}?category=${category.name}',
+                          );
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          );
+        }
+
+        // Fallback - empty state
+        return const SizedBox.shrink();
       },
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:indikom_app/features/category/presentation/bloc/category_bloc.dart';
 import 'package:indikom_app/features/home/bloc/home_bloc.dart';
 import 'package:indikom_app/features/home/presentation/bloc/banner_bloc.dart';
 import 'package:indikom_app/features/product/presentation/bloc/product_bloc.dart';
@@ -61,6 +62,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (_) => ProductBloc()..add(LoadProductsEvent()),
+        ),
+        BlocProvider(
+          create: (_) => CategoryBloc()..add(LoadCategoriesEvent()),
         ),
       ],
       child: BlocBuilder<LanguageBloc, LanguageState>(

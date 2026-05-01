@@ -252,16 +252,16 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   ),
                   padding: const EdgeInsets.all(8),
                 ),
-                IconButton(
-                  onPressed: () => setState(() => _isGridView = false),
-                  icon: Icon(
-                    Icons.list,
-                    color: !_isGridView
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
-                  ),
-                  padding: const EdgeInsets.all(8),
-                ),
+                // IconButton(
+                //   onPressed: () => setState(() => _isGridView = false),
+                //   icon: Icon(
+                //     Icons.list,
+                //     color: !_isGridView
+                //         ? AppColors.primary
+                //         : AppColors.textSecondary,
+                //   ),
+                //   padding: const EdgeInsets.all(8),
+                // ),
               ],
             ),
           ),
