@@ -160,7 +160,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildImageCarousel() {
-    final images = [widget.product.imageUrl];
+    // ✅ Use both thumbnail and main image if available
+    final images = [
+      if (widget.product.thumbnail != null &&
+          widget.product.thumbnail != widget.product.imageUrl)
+        widget.product.thumbnail,
+      widget.product.imageUrl,
+    ].where((url) => url != null && url.isNotEmpty).toList();
+
+    // Fallback to placeholder if no images
+    if (images.isEmpty) {
+      images.add('https://via.placeholder.com/800x600');
+    }
 
     return SliverToBoxAdapter(
       child: Container(
@@ -179,18 +190,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 return ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: Hero(
-                    tag: 'product_image_${widget.product.id}',
+                    tag: 'product_image_${widget.product.id}_$index',
                     child: CachedNetworkImage(
                       imageUrl: images[index] ?? '',
                       fit: BoxFit.contain,
                       width: double.infinity,
-                      // ✅ Shimmer placeholder while image loads
                       placeholder: (context, url) =>
                           ShimmerLoading.productDetailImage(),
                       errorWidget: (context, url, error) {
-                        print('❌ Image load error: $error');
                         return Container(
-                          color: Colors.grey,
+                          color: AppColors.cardBackground,
                           child: const Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -209,7 +218,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               },
             ),
 
-            // Image counter
+            // Image counter (only show if multiple images)
             if (images.length > 1)
               Positioned(
                 bottom: 12,
@@ -239,6 +248,70 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
+  Widget _buildARViewButton() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: widget.product.hasARView
+                  ? () {
+                      // ✅ Open AR file (PDF/3D model)
+                      // You can use url_launcher or a PDF viewer package
+                      print('Opening AR view: ${widget.product.arFile}');
+                    }
+                  : null,
+              icon: Icon(
+                Icons.view_in_ar,
+                color: widget.product.hasARView
+                    ? AppColors.primary
+                    : AppColors.textHint,
+              ),
+              label: Text(
+                widget.product.hasARView
+                    ? context.tr('view_in_your_room')
+                    : context.tr('ar_not_available'),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: widget.product.hasARView
+                    ? AppColors.primary
+                    : AppColors.textHint,
+                side: BorderSide(
+                  color: widget.product.hasARView
+                      ? AppColors.primary
+                      : AppColors.border,
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () {
+                // Share functionality
+              },
+              icon: const Icon(Icons.share, color: AppColors.primary),
+              label: Text(context.tr('share')),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildProductInfo() {
     final originalPrice = double.tryParse(widget.product.price) ?? 0;
     final discountedPrice = originalPrice * 0.85;
@@ -248,17 +321,46 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Category - with shimmer fallback if null
-          widget.product.categoryName != null
-              ? Text(
-                  widget.product.categoryName!,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
+          // ✅ Category & Sub-Category
+          Row(
+            children: [
+              if (widget.product.category != null)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                )
-              : ShimmerLoading.container(width: 80, height: 16),
-          const SizedBox(height: 4),
+                  child: Text(
+                    widget.product.category!,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              if (widget.product.subCategory != null) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    widget.product.subCategory!,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.secondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
 
           // Product Name
           Text(
@@ -316,9 +418,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    context.tr('in_stock'),
+                    widget.product.stock > 0
+                        ? context.tr('in_stock')
+                        : context.tr('out_of_stock'),
                     style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.success,
+                      color: widget.product.stock > 0
+                          ? AppColors.success
+                          : AppColors.error,
                     ),
                   ),
                 ],
@@ -388,51 +494,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
               );
             }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildARViewButton() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () {
-                // AR View functionality
-              },
-              icon: const Icon(Icons.view_in_ar, color: AppColors.primary),
-              label: Text(context.tr('view_in_your_room')),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () {
-                // Share functionality
-              },
-              icon: const Icon(Icons.share, color: AppColors.primary),
-              label: Text(context.tr('share')),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
           ),
         ],
       ),

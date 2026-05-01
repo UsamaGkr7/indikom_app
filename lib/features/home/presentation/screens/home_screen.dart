@@ -477,7 +477,8 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: openContainer,
               child: ProductCard(
                 productId: product.id,
-                imageUrl: product.imageUrl ?? 'https://via.placeholder.com/200',
+                imageUrl:
+                    product.thumbnail ?? 'https://via.placeholder.com/200',
                 title: product.name,
                 price: '\$${product.price}',
                 originalPrice: product.originalPrice != null

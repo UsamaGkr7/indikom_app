@@ -7,10 +7,15 @@ class ProductModel {
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final int supplier;
-  final int? categoryId; // ✅ Changed: category ID as int
-  final String? categoryName; // ✅ Added: category name (if available)
-  final String? imageUrl; // ✅ Changed: from 'file' field
+
+  // ✅ Updated fields based on new API
+  final String? category; // ✅ Now String (e.g., "Home Appliances")
+  final String? subCategory; // ✅ New field (e.g., "Sofas")
+  final String? thumbnail; // ✅ New field - thumbnail image URL
+  final String? imageUrl; // ✅ Main image (from 'file' field)
+  final String? arFile; // ✅ New field - AR view file URL
+
+  // Optional fields (may be added later)
   final double? rating;
   final int? reviewCount;
   final double? originalPrice;
@@ -25,10 +30,11 @@ class ProductModel {
     required this.isActive,
     required this.createdAt,
     required this.updatedAt,
-    required this.supplier,
-    this.categoryId,
-    this.categoryName,
+    this.category,
+    this.subCategory,
+    this.thumbnail,
     this.imageUrl,
+    this.arFile,
     this.rating,
     this.reviewCount,
     this.originalPrice,
@@ -36,30 +42,14 @@ class ProductModel {
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
-    // Parse price
-    double priceValue =
-        double.tryParse(json['price']?.toString() ?? '0') ?? 0.0;
-
-    // Handle category - can be int (ID) or Map (nested object)
-    int? categoryId;
-    String? categoryName;
-
-    final categoryData = json['category'];
-    if (categoryData is int) {
-      categoryId = categoryData;
-    } else if (categoryData is Map) {
-      categoryId = categoryData['id'];
-      categoryName = categoryData['name'];
-    }
-
-    // Handle image URL - 'file' field can be null or full URL
-    String? imageUrl = json['file'];
-    if (imageUrl != null && imageUrl.isNotEmpty) {
-      // ✅ Fix mixed base URLs (127.0.0.1 vs 192.168.x.x)
-      if (imageUrl.startsWith('http://127.0.0.1')) {
-        imageUrl = imageUrl.replaceAll(
-            'http://127.0.0.1:8000', 'http://192.168.0.102:8000');
+    // ✅ Fix mixed base URLs helper
+    String? fixUrl(String? url) {
+      if (url == null || url.isEmpty) return null;
+      if (url.startsWith('http://127.0.0.1:8000')) {
+        return url.replaceAll(
+            'http://127.0.0.1:8000', 'http://192.168.0.103:8000');
       }
+      return url;
     }
 
     return ProductModel(
@@ -71,10 +61,23 @@ class ProductModel {
       isActive: json['is_active'] ?? true,
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
-      supplier: json['supplier'] ?? 0,
-      categoryId: categoryId,
-      categoryName: categoryName,
-      imageUrl: imageUrl,
+
+      // ✅ Updated category handling - now direct String
+      category: json['category'],
+
+      // ✅ New sub_category field
+      subCategory: json['sub_category'],
+
+      // ✅ New thumbnail field
+      thumbnail: fixUrl(json['thumbnail']),
+
+      // ✅ Main image from 'file' field
+      imageUrl: fixUrl(json['file']),
+
+      // ✅ New AR file field
+      arFile: fixUrl(json['ar_file']),
+
+      // Optional fields
       rating: json['rating'] != null
           ? double.tryParse(json['rating'].toString())
           : null,
@@ -98,9 +101,17 @@ class ProductModel {
       'is_active': isActive,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
-      'supplier': supplier,
-      if (categoryId != null) 'category': categoryId,
+      if (category != null) 'category': category,
+      if (subCategory != null) 'sub_category': subCategory,
+      if (thumbnail != null) 'thumbnail': thumbnail,
       if (imageUrl != null) 'file': imageUrl,
+      if (arFile != null) 'ar_file': arFile,
     };
   }
+
+  // ✅ Helper: Check if product has AR view
+  bool get hasARView => arFile != null && arFile!.isNotEmpty;
+
+  // ✅ Helper: Get display image (prefer thumbnail, fallback to main image)
+  String? get displayImage => thumbnail ?? imageUrl;
 }

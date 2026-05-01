@@ -140,7 +140,7 @@ class ProductCard extends StatelessWidget {
     // Load network image
     return CachedNetworkImage(
       imageUrl: imageUrl!,
-      fit: BoxFit.contain,
+      fit: BoxFit.fill,
       width: double.infinity,
       placeholder: (context, url) => Container(
         color: AppColors.cardBackground,

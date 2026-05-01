@@ -55,6 +55,10 @@ class AppTranslations {
       'similar_products': 'Similar Products',
       'see_more': 'See More',
       'know_more': 'Know More',
+      'out_of_stock': 'Out of Stock',
+      'ar_not_available': 'AR View Not Available',
+      'category': 'Category',
+      'sub_category': 'Sub-Category',
       // ... add more keys
     },
     'ar': {
@@ -110,6 +114,10 @@ class AppTranslations {
       'similar_products': 'منتجات مماثلة',
       'see_more': 'المزيد',
       'know_more': 'اعرف المزيد',
+      'out_of_stock': 'غير متوفر',
+      'ar_not_available': 'عرض الواقع المعزز غير متاح',
+      'category': 'الفئة',
+      'sub_category': 'الفئة الفرعية',
       // ... add more keys
     },
   };
