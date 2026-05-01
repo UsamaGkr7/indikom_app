@@ -13,12 +13,14 @@ import 'package:indikom_app/shared/widgets/category_card.dart';
 import 'package:indikom_app/shared/widgets/product_card.dart';
 import 'package:indikom_app/shared/widgets/promotional_banner.dart';
 import 'package:indikom_app/shared/widgets/section_header.dart';
+import 'package:indikom_app/shared/widgets/shimmer_loading.dart';
+import 'package:shimmer_animation/shimmer_animation.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../core/utils/responsive_utils.dart';
-import '../../../../core/utils/extensions.dart'; // ✅ Import this
+import '../../../../core/utils/extensions.dart';
 import '../../../../shared/widgets/app_button.dart';
-import '../../../../shared/widgets/language_switcher.dart'; // ✅ Import this
+import '../../../../shared/widgets/language_switcher.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -48,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-          // Categories Section
+          // Categories Section with Shimmer
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
@@ -58,16 +60,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-          // Promotional Banner - FIXED ✅
+          // Promotional Banner with Shimmer
           BlocBuilder<BannerBloc, BannerState>(
             builder: (context, state) {
               if (state is BannerLoading) {
                 return SliverToBoxAdapter(
-                  child: Container(
-                    margin: Responsive.horizontalPadding(context, false),
-                    height: 250,
-                    child: const Center(child: CircularProgressIndicator()),
-                  ),
+                  child: ShimmerLoading.banner(),
                 );
               }
 
@@ -80,16 +78,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               }
 
-              // Fallback to empty space
-              return const SliverToBoxAdapter(
-                child: SizedBox(height: 250),
+              // ✅ Handle error state - show retry option
+              if (state is BannerError) {
+                return SliverToBoxAdapter(
+                  child: _buildBannerErrorWidget(context),
+                );
+              }
+
+              // ✅ Fallback - show shimmer again (not empty space)
+              return SliverToBoxAdapter(
+                child: ShimmerLoading.banner(),
               );
             },
           ),
-
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-          // Featured Products
+          // Featured Products with Shimmer
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
@@ -99,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-          // Sofas Category
+          // Sofas Category with Shimmer
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
@@ -124,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Row(
           children: [
             Text(
-              'Indi', // ✅ Keep brand name as is (or translate if needed)
+              'Indi',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -132,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             Text(
-              'Kom', // ✅ Keep brand name as is (or translate if needed)
+              'Kom',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -143,10 +147,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       actions: [
-        // ✅ Language Switcher
         const LanguageSwitcher(showDropdown: false),
         const SizedBox(width: 12),
-        // Cart Icon
         IconButton(
           onPressed: () {
             // Navigate to cart
@@ -156,6 +158,52 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(width: 8),
       ],
+    );
+  }
+
+  Widget _buildBannerErrorWidget(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(8),
+      height: 250,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white, width: 2),
+      ),
+      child: Shimmer(
+        enabled: true,
+        color: AppColors.primaryLight,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.broken_image,
+              size: 60,
+              color: AppColors.primary,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Failed to load banners',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () {
+                // ✅ Retry loading banners
+                context.read<BannerBloc>().add(LoadBannersEvent());
+              },
+              icon: const Icon(Icons.refresh, size: 16),
+              label: const Text('Retry'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -172,7 +220,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         child: TextField(
           decoration: InputDecoration(
-            hintText: context.tr('search_hint'), // ✅ TRANSLATED
+            hintText: context.tr('search_hint'),
             hintStyle:
                 AppTextStyles.bodyMedium.copyWith(color: AppColors.textHint),
             prefixIcon: const Icon(Icons.search, color: AppColors.primary),
@@ -186,63 +234,87 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCategoriesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: Responsive.horizontalPadding(context, false),
-          child: Text(
-            context.tr('categories'), // ✅ TRANSLATED
-            style: AppTextStyles.h3,
-          ),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 110,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: Responsive.horizontalPadding(context, false),
+    return BlocBuilder<BannerBloc, BannerState>(
+      builder: (context, state) {
+        // Show shimmer for categories while banners load
+        if (state is BannerLoading) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CategoryCard(
-                icon: 'assets/images/sofa3.jpeg',
-                label: context.tr('sofas'), // ✅ TRANSLATED
-                onTap: () {},
+              Padding(
+                padding: Responsive.horizontalPadding(context, false),
+                child: ShimmerLoading.container(
+                  width: 120,
+                  height: 24,
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
-              const SizedBox(width: 12),
-              CategoryCard(
-                icon: 'assets/images/door4.jpeg',
-                label: context.tr('doors'), // ✅ TRANSLATED
-                onTap: () {},
-              ),
-              const SizedBox(width: 12),
-              CategoryCard(
-                icon: 'assets/images/wardrobe58.jpeg',
-                label: context.tr('wardrobes'), // ✅ TRANSLATED
-                onTap: () {},
-              ),
-              const SizedBox(width: 12),
-              CategoryCard(
-                icon: 'assets/images/appliance.jpeg',
-                label: context.tr('appliances'), // ✅ TRANSLATED
-                onTap: () {},
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 110,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: Responsive.horizontalPadding(context, false),
+                  children: List.generate(
+                    4,
+                    (index) => Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: ShimmerLoading.categoryCard(),
+                    ),
+                  ),
+                ),
               ),
             ],
-          ),
-        ),
-      ],
-    );
-  }
+          );
+        }
 
-  Widget _buildPromotionalBanner() {
-    return Container(
-      margin: Responsive.horizontalPadding(context, false),
-      height: 250,
-      child: const PromotionalBanner(
-        imageUrl: 'assets/images/banner_refrigerator.jpg',
-        title: 'LOREM IPSUM DOLOR',
-        subtitle: 'Lorem ipsum dolor sit amet consectetur.',
-        discount: '15% OFF',
-      ),
+        // Actual categories content
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: Responsive.horizontalPadding(context, false),
+              child: Text(
+                context.tr('categories'),
+                style: AppTextStyles.h3,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 110,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: Responsive.horizontalPadding(context, false),
+                children: [
+                  CategoryCard(
+                    icon: 'assets/images/sofa3.jpeg',
+                    label: context.tr('sofas'),
+                    onTap: () {},
+                  ),
+                  const SizedBox(width: 12),
+                  CategoryCard(
+                    icon: 'assets/images/door4.jpeg',
+                    label: context.tr('doors'),
+                    onTap: () {},
+                  ),
+                  const SizedBox(width: 12),
+                  CategoryCard(
+                    icon: 'assets/images/wardrobe58.jpeg',
+                    label: context.tr('wardrobes'),
+                    onTap: () {},
+                  ),
+                  const SizedBox(width: 12),
+                  CategoryCard(
+                    icon: 'assets/images/appliance.jpeg',
+                    label: context.tr('appliances'),
+                    onTap: () {},
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -252,11 +324,21 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Padding(
           padding: Responsive.horizontalPadding(context, false),
-          child: SectionHeader(
-            title: context.tr('featured_products'),
-            onSeeAllPressed: () {
-              // Navigate to all products
-              context.push(RoutePaths.productList);
+          child: BlocBuilder<ProductBloc, ProductState>(
+            builder: (context, state) {
+              if (state is ProductLoading) {
+                return ShimmerLoading.container(
+                  width: 150,
+                  height: 24,
+                  borderRadius: BorderRadius.circular(4),
+                );
+              }
+              return SectionHeader(
+                  title: context.tr('featured_products'),
+                  onSeeAllPressed: () {
+                    // Navigate to all products
+                    context.push(RoutePaths.productList);
+                  });
             },
           ),
         ),
@@ -266,20 +348,15 @@ class _HomeScreenState extends State<HomeScreen> {
           child: BlocBuilder<ProductBloc, ProductState>(
             builder: (context, state) {
               if (state is ProductLoading) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
+                return Responsive.isMobile(context)
+                    ? _buildShimmerGrid(2)
+                    : Responsive.isTablet(context)
+                        ? _buildShimmerGrid(3)
+                        : _buildShimmerGrid(4);
               }
 
               if (state is ProductsLoaded) {
                 final products = state.products.take(4).toList();
-
-                if (products.isEmpty) {
-                  return const Center(
-                    child: Text('No products available'),
-                  );
-                }
-
                 return Responsive.isMobile(context)
                     ? _buildProductGrid(2, products: products)
                     : Responsive.isTablet(context)
@@ -287,22 +364,26 @@ class _HomeScreenState extends State<HomeScreen> {
                         : _buildProductGrid(4, products: products);
               }
 
-              if (state is ProductError) {
-                return Center(
-                  child: Text('Error: ${state.message}'),
-                );
-              }
-
-              // Show placeholder products while loading
-              return Responsive.isMobile(context)
-                  ? _buildProductGrid(2)
-                  : Responsive.isTablet(context)
-                      ? _buildProductGrid(3)
-                      : _buildProductGrid(4);
+              return _buildShimmerGrid(2);
             },
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildShimmerGrid(int crossAxisCount) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.75,
+      ),
+      itemCount: 4,
+      itemBuilder: (context, index) => ShimmerLoading.productCard(),
     );
   }
 
@@ -312,19 +393,49 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Padding(
           padding: Responsive.horizontalPadding(context, false),
-          child: SectionHeader(
-            title: categoryName, // You can translate this too if needed
-            onSeeAllPressed: () {},
+          child: BlocBuilder<ProductBloc, ProductState>(
+            builder: (context, state) {
+              if (state is ProductLoading) {
+                return ShimmerLoading.container(
+                  width: 100,
+                  height: 24,
+                  borderRadius: BorderRadius.circular(4),
+                );
+              }
+              return SectionHeader(
+                  title: categoryName,
+                  onSeeAllPressed: () {
+                    // Navigate to all products
+                    context.push(RoutePaths.productList);
+                  });
+            },
           ),
         ),
         const SizedBox(height: 16),
         Padding(
           padding: Responsive.horizontalPadding(context, false),
-          child: Responsive.isMobile(context)
-              ? _buildProductGrid(2)
-              : Responsive.isTablet(context)
-                  ? _buildProductGrid(3)
-                  : _buildProductGrid(4),
+          child: BlocBuilder<ProductBloc, ProductState>(
+            builder: (context, state) {
+              if (state is ProductLoading) {
+                return Responsive.isMobile(context)
+                    ? _buildShimmerGrid(2)
+                    : Responsive.isTablet(context)
+                        ? _buildShimmerGrid(3)
+                        : _buildShimmerGrid(4);
+              }
+
+              if (state is ProductsLoaded) {
+                final products = state.products.take(4).toList();
+                return Responsive.isMobile(context)
+                    ? _buildProductGrid(2, products: products)
+                    : Responsive.isTablet(context)
+                        ? _buildProductGrid(3, products: products)
+                        : _buildProductGrid(4, products: products);
+              }
+
+              return _buildShimmerGrid(2);
+            },
+          ),
         ),
       ],
     );
@@ -355,21 +466,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final product = displayProducts[index];
 
-        // ✅ WRAP WITH OpenContainer FOR ANIMATION
         return OpenContainer(
           transitionType: ContainerTransitionType.fadeThrough,
           transitionDuration: const Duration(milliseconds: 900),
-
-          // Screen that opens
           openBuilder: (BuildContext context, VoidCallback _) {
             return ProductDetailScreen(product: product);
           },
-
-          // Widget user taps (ProductCard)
           closedBuilder: (BuildContext context, VoidCallback openContainer) {
             return GestureDetector(
-              onTap:
-                  openContainer, // ✅ Call this to trigger animation + navigation
+              onTap: openContainer,
               child: ProductCard(
                 productId: product.id,
                 imageUrl: product.imageUrl ?? 'https://via.placeholder.com/200',
@@ -384,16 +489,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             );
           },
-
-          // Optional styling
           closedElevation: 0,
           openElevation: 0,
           closedShape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           closedColor: Colors.transparent,
-          tappable:
-              false, // ✅ Set to false since we handle tap in closedBuilder
+          tappable: false,
         );
       },
     );
@@ -425,17 +527,17 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(
             icon: const Icon(Icons.home_outlined),
             activeIcon: const Icon(Icons.home),
-            label: context.tr('home'), // ✅ TRANSLATED
+            label: context.tr('home'),
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.inventory_2_outlined),
             activeIcon: const Icon(Icons.inventory_2),
-            label: context.tr('orders'), // ✅ TRANSLATED
+            label: context.tr('orders'),
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.person_outline),
             activeIcon: const Icon(Icons.person),
-            label: context.tr('profile'), // ✅ TRANSLATED
+            label: context.tr('profile'),
           ),
         ],
       ),

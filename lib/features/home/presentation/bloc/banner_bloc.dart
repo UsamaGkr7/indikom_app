@@ -63,7 +63,16 @@ class BannerBloc extends Bloc<BannerEvent, BannerState> {
       final banners = await _bannerRepository.fetchBanners();
       emit(BannerLoaded(banners: banners));
     } catch (e) {
-      emit(BannerError(message: e.toString()));
+      print('❌ Error fetching banners: $e');
+
+      // ✅ Emit error state with user-friendly message
+      String errorMessage = 'Failed to load banners';
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Connection refused')) {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+
+      emit(BannerError(message: errorMessage));
     }
   }
 }

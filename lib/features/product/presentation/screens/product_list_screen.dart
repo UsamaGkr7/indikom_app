@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:indikom_app/config/routing/route_paths.dart';
 import 'package:indikom_app/features/product/presentation/screens/product_detail_screen.dart';
+import 'package:indikom_app/shared/widgets/shimmer_loading.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../core/utils/responsive_utils.dart';
@@ -49,7 +50,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
   // ✅ Filter and sort products WITHOUT setState - returns new list
   List<ProductModel> _getFilteredAndSortedProducts(
       List<ProductModel> products) {
-    // 1. Filter by search
     var filtered = products.where((product) {
       final searchMatch = _searchController.text.isEmpty ||
           product.name
@@ -58,15 +58,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
           product.description
               .toLowerCase()
               .contains(_searchController.text.toLowerCase());
-
-      // final categoryMatch = widget.category == null ||
-      //     product.category?.toLowerCase() == widget.category!.toLowerCase();
-
-      // return searchMatch && categoryMatch;
       return searchMatch;
     }).toList();
 
-    // 2. Sort
     filtered.sort((a, b) {
       switch (_sortBy) {
         case 'name':
@@ -102,7 +96,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
         sortBy: _sortBy,
         sortOrder: _sortOrder,
         onSortChanged: (sortBy, sortOrder) {
-          // ✅ Use setState here (outside build method)
           setState(() {
             _sortBy = sortBy;
             _sortOrder = sortOrder;
@@ -126,9 +119,20 @@ class _ProductListScreenState extends State<ProductListScreen> {
           // Filter & View Toggle Bar
           _buildFilterBar(),
 
-          // Product Count - will be updated via BlocBuilder
+          // Product Count with Shimmer
           BlocBuilder<ProductBloc, ProductState>(
             builder: (context, state) {
+              if (state is ProductLoading) {
+                return Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: ShimmerLoading.container(
+                    width: 80,
+                    height: 16,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                );
+              }
               if (state is ProductsLoaded) {
                 final filtered = _getFilteredAndSortedProducts(state.products);
                 return _buildProductCount(filtered.length);
@@ -137,7 +141,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
             },
           ),
 
-          // Products Grid/List
+          // Products Grid/List with Shimmer
           Expanded(child: _buildProductList()),
         ],
       ),
@@ -199,7 +203,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
               const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
         onChanged: (value) {
-          // ✅ Trigger rebuild by calling setState
           setState(() {});
         },
       ),
@@ -286,16 +289,17 @@ class _ProductListScreenState extends State<ProductListScreen> {
   Widget _buildProductList() {
     return BlocBuilder<ProductBloc, ProductState>(
       builder: (context, state) {
+        // ✅ Show shimmer while loading
         if (state is ProductLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return _isGridView ? _buildShimmerGrid() : _buildShimmerList();
         }
 
+        // ✅ Show products when loaded
         if (state is ProductsLoaded) {
-          // ✅ Filter and sort WITHOUT setState - just compute and return
-          final filteredProducts =
+          final _filteredProducts =
               _getFilteredAndSortedProducts(state.products);
 
-          if (filteredProducts.isEmpty) {
+          if (_filteredProducts.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -318,12 +322,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
           }
 
           if (_isGridView) {
-            return _buildGridView(filteredProducts);
+            return _buildGridView(_filteredProducts);
           } else {
-            return _buildListView(filteredProducts);
+            return _buildListView(_filteredProducts);
           }
         }
 
+        // ✅ Show error state
         if (state is ProductError) {
           return Center(
             child: Column(
@@ -354,6 +359,37 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
+  // ✅ Shimmer Grid for Loading State
+  Widget _buildShimmerGrid() {
+    final crossAxisCount = Responsive.isMobile(context)
+        ? 2
+        : Responsive.isTablet(context)
+            ? 3
+            : 4;
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.75,
+      ),
+      itemCount: 6,
+      itemBuilder: (context, index) => ShimmerLoading.productCard(),
+    );
+  }
+
+  // ✅ Shimmer List for Loading State
+  Widget _buildShimmerList() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: 5,
+      itemBuilder: (context, index) => ShimmerLoading.listItem(),
+    );
+  }
+
+  // ✅ Actual Grid with Products
   Widget _buildGridView(List<ProductModel> products) {
     final crossAxisCount = Responsive.isMobile(context)
         ? 2
@@ -373,20 +409,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
       itemBuilder: (context, index) {
         final product = products[index];
 
-        // ✅ CORRECT: Use closedBuilder instead of child
         return OpenContainer(
           transitionType: ContainerTransitionType.fadeThrough,
           transitionDuration: const Duration(milliseconds: 900),
-
-          // ✅ Screen that opens (Product Detail)
           openBuilder: (BuildContext context, VoidCallback _) {
             return ProductDetailScreen(product: product);
           },
-
-          // ✅ Widget that user taps (Product Card) - REQUIRED
           closedBuilder: (BuildContext context, VoidCallback openContainer) {
             return GestureDetector(
-              onTap: openContainer, // ✅ Call this to open the detail screen
+              onTap: openContainer,
               child: ProductCard(
                 imageUrl: product.imageUrl,
                 title: product.name,
@@ -401,21 +432,19 @@ class _ProductListScreenState extends State<ProductListScreen> {
               ),
             );
           },
-
-          // ✅ Optional styling
           closedElevation: 0,
           openElevation: 0,
           closedShape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           closedColor: Colors.transparent,
-          tappable:
-              false, // ✅ Set to false since we handle tap in closedBuilder
+          tappable: false,
         );
       },
     );
   }
 
+  // ✅ Actual List with Products
   Widget _buildListView(List<ProductModel> products) {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -426,12 +455,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
         return OpenContainer(
           transitionType: ContainerTransitionType.fadeThrough,
           transitionDuration: const Duration(milliseconds: 400),
-
           openBuilder: (BuildContext context, VoidCallback _) {
             return ProductDetailScreen(product: product);
           },
-
-          // ✅ closedBuilder for list items
           closedBuilder: (BuildContext context, VoidCallback openContainer) {
             return GestureDetector(
               onTap: openContainer,
@@ -488,13 +514,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 4),
-                            // if (product.category != null)
-                            //   Text(
-                            //     product.category!,
-                            //     style: AppTextStyles.bodySmall.copyWith(
-                            //       color: AppColors.textSecondary,
-                            //     ),
-                            //   ),
                             const Spacer(),
                             Row(
                               children: [
@@ -526,7 +545,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
               ),
             );
           },
-
           closedElevation: 0,
           openElevation: 0,
           closedShape: RoundedRectangleBorder(

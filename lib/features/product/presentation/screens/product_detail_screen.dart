@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:indikom_app/shared/widgets/shimmer_loading.dart';
 import 'package:indikom_app/shared/widgets/similar_product_card.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
@@ -24,12 +25,55 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   String? _selectedColor;
   int _quantity = 1;
 
-  // Sample colors (in real app, this would come from API)
+  // Track if similar products are loading (for future API integration)
+  bool _similarProductsLoading = false;
+  List<Map<String, dynamic>> _similarProducts = [];
   final List<Map<String, dynamic>> _colors = [
     {'name': 'Green', 'value': '#2D5A4A'},
     {'name': 'Black', 'value': '#1a1a1a'},
     {'name': 'Brown', 'value': '#8B4513'},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSimilarProducts();
+  }
+
+  // ✅ Simulate loading similar products from API
+  Future<void> _loadSimilarProducts() async {
+    setState(() => _similarProductsLoading = true);
+
+    // Simulate API delay
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    // Sample data (replace with actual API call)
+    setState(() {
+      _similarProducts = [
+        {
+          'name': 'Velvet Sofa',
+          'price': '\$750',
+          'image': 'https://via.placeholder.com/150'
+        },
+        {
+          'name': 'Leather 3-Seater',
+          'price': '\$549',
+          'image': 'https://via.placeholder.com/150'
+        },
+        {
+          'name': 'Modular Grey',
+          'price': '\$2599',
+          'image': 'https://via.placeholder.com/150'
+        },
+        {
+          'name': 'Studio Loveseat',
+          'price': '\$899',
+          'image': 'https://via.placeholder.com/150'
+        },
+      ];
+      _similarProductsLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,10 +85,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           Expanded(
             child: CustomScrollView(
               slivers: [
-                // Product Image Carousel
+                // Product Image Carousel with Shimmer
                 _buildImageCarousel(),
 
-                // Product Info
+                // Product Info with Shimmer fallback
                 SliverToBoxAdapter(
                   child: _buildProductInfo(),
                 ),
@@ -59,7 +103,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   child: _buildARViewButton(),
                 ),
 
-                // About Product
+                // About Product with Shimmer text
                 SliverToBoxAdapter(
                   child: _buildAboutProduct(),
                 ),
@@ -69,7 +113,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   child: _buildTechnicalSpecs(),
                 ),
 
-                // Similar Products
+                // Similar Products with Shimmer Loading
                 SliverToBoxAdapter(
                   child: _buildSimilarProducts(),
                 ),
@@ -116,7 +160,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildImageCarousel() {
-    final images = [widget.product.imageUrl]; // Add more images if available
+    final images = [widget.product.imageUrl];
 
     return SliverToBoxAdapter(
       child: Container(
@@ -133,26 +177,35 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               },
               itemBuilder: (context, index) {
                 return ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Hero(
-                      // ✅ Add Hero widget for smooth image transition
-                      tag: 'product_image_${widget.product.id}',
-                      child: CachedNetworkImage(
-                        imageUrl: images[index] ?? '',
-                        fit: BoxFit.contain,
-                        width: double.infinity,
-                        placeholder: (context, url) => Container(
-                          color: AppColors.cardBackground,
-                          child:
-                              const Center(child: CircularProgressIndicator()),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          color: AppColors.cardBackground,
-                          child: const Icon(Icons.image,
-                              size: 60, color: AppColors.textHint),
-                        ),
-                      ),
-                    ));
+                  borderRadius: BorderRadius.circular(16),
+                  child: Hero(
+                    tag: 'product_image_${widget.product.id}',
+                    child: CachedNetworkImage(
+                      imageUrl: images[index] ?? '',
+                      fit: BoxFit.contain,
+                      width: double.infinity,
+                      // ✅ Shimmer placeholder while image loads
+                      placeholder: (context, url) =>
+                          ShimmerLoading.productDetailImage(),
+                      errorWidget: (context, url, error) {
+                        print('❌ Image load error: $error');
+                        return Container(
+                          color: Colors.grey,
+                          child: const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.broken_image,
+                                  size: 50, color: AppColors.textHint),
+                              SizedBox(height: 8),
+                              Text('Failed to load',
+                                  style: TextStyle(fontSize: 12)),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
               },
             ),
 
@@ -188,21 +241,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   Widget _buildProductInfo() {
     final originalPrice = double.tryParse(widget.product.price) ?? 0;
-    final discountedPrice = originalPrice * 0.85; // 15% discount example
+    final discountedPrice = originalPrice * 0.85;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Category
-          Text(
-            widget.product.categoryName ?? context.tr('furniture'),
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          // Category - with shimmer fallback if null
+          widget.product.categoryName != null
+              ? Text(
+                  widget.product.categoryName!,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                )
+              : ShimmerLoading.container(width: 80, height: 16),
           const SizedBox(height: 4),
 
           // Product Name
@@ -395,13 +450,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             style: AppTextStyles.h3.copyWith(fontSize: 18),
           ),
           const SizedBox(height: 12),
-          Text(
-            widget.product.description,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.6,
-            ),
-          ),
+          // ✅ Shimmer text lines if description is empty
+          widget.product.description.isNotEmpty
+              ? Text(
+                  widget.product.description,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                    height: 1.6,
+                  ),
+                )
+              : ShimmerLoading.textLines(lines: 3, height: 14),
           const SizedBox(height: 12),
           TextButton(
             onPressed: () {
@@ -479,30 +537,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildSimilarProducts() {
-    // Sample similar products (in real app, fetch from API)
-    final similarProducts = [
-      {
-        'name': 'Velvet Sofa',
-        'price': '\$750',
-        'image': 'https://via.placeholder.com/150'
-      },
-      {
-        'name': 'Leather 3-Seater',
-        'price': '\$549',
-        'image': 'https://via.placeholder.com/150'
-      },
-      {
-        'name': 'Modular Grey',
-        'price': '\$2599',
-        'image': 'https://via.placeholder.com/150'
-      },
-      {
-        'name': 'Studio Loveseat',
-        'price': '\$899',
-        'image': 'https://via.placeholder.com/150'
-      },
-    ];
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Column(
@@ -536,27 +570,44 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.75,
+
+          // ✅ Show shimmer while similar products load
+          if (_similarProductsLoading)
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.75,
+              ),
+              itemCount: 4,
+              itemBuilder: (context, index) => ShimmerLoading.productCard(),
+            )
+          else
+            // ✅ Show actual similar products
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.75,
+              ),
+              itemCount: _similarProducts.length,
+              itemBuilder: (context, index) {
+                return SimilarProductCard(
+                  imageUrl: _similarProducts[index]['image']!,
+                  title: _similarProducts[index]['name']!,
+                  price: _similarProducts[index]['price']!,
+                  onTap: () {
+                    // Navigate to product detail
+                  },
+                );
+              },
             ),
-            itemCount: similarProducts.length,
-            itemBuilder: (context, index) {
-              return SimilarProductCard(
-                imageUrl: similarProducts[index]['image']!,
-                title: similarProducts[index]['name']!,
-                price: similarProducts[index]['price']!,
-                onTap: () {
-                  // Navigate to product detail
-                },
-              );
-            },
-          ),
         ],
       ),
     );
