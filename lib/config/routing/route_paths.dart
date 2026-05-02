@@ -6,7 +6,7 @@ class RoutePaths {
   static const String orders = '/orders';
   static const String profile = '/profile';
   static const String productDetail = '/product-detail';
-  static const String productList = '/products'; // ✅ Add this
+  static const String productList = '/products';
   static const String cart = '/cart';
   static const String checkout = '/checkout';
 
@@ -16,4 +16,6 @@ class RoutePaths {
 
   // Admin Routes
   static const String adminDashboard = '/admin/dashboard';
+
+  static const String categoryDetail = '/category-detail';
 }

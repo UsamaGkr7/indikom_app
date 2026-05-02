@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:indikom_app/core/utils/extensions.dart';
 import 'package:indikom_app/features/auth/presentation/screens/splash_screen.dart';
+import 'package:indikom_app/features/category/presentation/screens/category_detail_screen.dart';
 import 'package:indikom_app/features/product/data/models/product_model.dart';
 import 'package:indikom_app/features/product/presentation/screens/product_detail_screen.dart';
 import 'package:indikom_app/features/product/presentation/screens/product_list_screen.dart';
@@ -138,6 +139,18 @@ class AppRouter {
               );
             },
           ),
+        ),
+
+        GoRoute(
+          path: RoutePaths.categoryDetail,
+          builder: (context, state) {
+            final categoryName = state.uri.queryParameters['category'] ?? '';
+            final categoryThumbnail = state.uri.queryParameters['thumbnail'];
+            return CategoryDetailScreen(
+              categoryName: categoryName,
+              categoryThumbnail: categoryThumbnail,
+            );
+          },
         ),
 
         // ✅ SHELL ROUTE - Use builder (NOT pageBuilder) to preserve bottom nav

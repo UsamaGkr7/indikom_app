@@ -59,6 +59,9 @@ class AppTranslations {
       'ar_not_available': 'AR View Not Available',
       'category': 'Category',
       'sub_category': 'Sub-Category',
+      'shop_by': 'Shop by',
+      'top_deals': 'Top Deals',
+      'everyday': 'Everyday',
       // ... add more keys
     },
     'ar': {
@@ -118,6 +121,9 @@ class AppTranslations {
       'ar_not_available': 'عرض الواقع المعزز غير متاح',
       'category': 'الفئة',
       'sub_category': 'الفئة الفرعية',
+      'shop_by': 'تسوق حسب',
+      'top_deals': 'أفضل العروض',
+      'everyday': 'يومي',
       // ... add more keys
     },
   };

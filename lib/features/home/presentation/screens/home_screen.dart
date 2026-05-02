@@ -325,7 +325,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () {
                           // ✅ Navigate to product list filtered by category
                           context.push(
-                            '${RoutePaths.productList}?category=${category.name}',
+                            '${RoutePaths.categoryDetail}?category=${category.name}',
+                            extra: {'thumbnail': category.thumbnail},
                           );
                         },
                       ),
