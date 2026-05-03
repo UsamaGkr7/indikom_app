@@ -16,13 +16,17 @@ import '../../../product/presentation/bloc/product_bloc.dart';
 import '../../../product/data/models/product_model.dart';
 
 class CategoryDetailScreen extends StatefulWidget {
-  final String categoryName;
+  final String categorySlug; // ✅ Changed from categorySlug to categorySlug
   final String? categoryThumbnail;
+  final String? categoryIcon;
+  final int? categoryId;
 
   const CategoryDetailScreen({
     super.key,
-    required this.categoryName,
+    required this.categorySlug,
     this.categoryThumbnail,
+    this.categoryIcon,
+    this.categoryId,
   });
 
   @override
@@ -33,10 +37,23 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // Load sub-categories for this category
-    context.read<SubCategoryBloc>().add(
-          LoadSubCategoriesEvent(categoryName: widget.categoryName),
-        );
+
+    print('🏷️ CategoryDetailScreen initialized');
+    print('🏷️ Category Slug: ${widget.categorySlug}');
+    print('🏷️ Category ID: ${widget.categoryId}');
+
+    // ✅ Load sub-categories using categoryId
+    if (widget.categoryId != null) {
+      print('📡 Loading sub-categories for category ID: ${widget.categoryId}');
+      context.read<SubCategoryBloc>().add(
+            LoadSubCategoriesEvent(categoryId: widget.categoryId),
+          );
+    } else {
+      print('⚠️ No categoryId provided, loading all sub-categories');
+      context.read<SubCategoryBloc>().add(
+            const LoadSubCategoriesEvent(categoryId: null),
+          );
+    }
   }
 
   Widget _buildBannerErrorWidget(BuildContext context) {
@@ -164,7 +181,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
       ),
       title: Text(
-        widget.categoryName,
+        widget.categorySlug,
         style: AppTextStyles.h3,
       ),
       centerTitle: true,
@@ -217,7 +234,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  widget.categoryName,
+                  widget.categorySlug,
                   style: AppTextStyles.h1.copyWith(
                     color: Colors.white,
                     fontSize: 32,
@@ -271,14 +288,13 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         }
 
         if (state is SubCategoriesLoaded && state.subCategories.isNotEmpty) {
-          // ✅ FILTER sub-categories by current category
-          final filteredSubCategories = state.subCategories
-              .where((sub) =>
-                  sub.category.toLowerCase() ==
-                  widget.categoryName.toLowerCase())
-              .toList();
+          // ✅ FILTER by category ID (int), not slug (String)
+          final filteredSubCategories = widget.categoryId != null
+              ? state.subCategories
+                  .where((sub) => sub.category == widget.categoryId)
+                  .toList()
+              : state.subCategories; // If no categoryId, show all
 
-          // If no sub-categories found for this category, show empty state
           if (filteredSubCategories.isEmpty) {
             return const SizedBox.shrink();
           }
@@ -289,7 +305,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'Shop by ${widget.categoryName}',
+                  'Shop by ${widget.categorySlug}', // Display name (slug or name)
                   style: AppTextStyles.h3,
                 ),
               ),
@@ -306,9 +322,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                     final subCategory = filteredSubCategories[index];
                     return GestureDetector(
                       onTap: () {
-                        // Navigate to product list filtered by sub-category
+                        // ✅ Navigate using slug for both category and sub-category
                         context.push(
-                          '${RoutePaths.productList}?category=${widget.categoryName}&subCategory=${subCategory.name}',
+                          '${RoutePaths.productList}?category=${widget.categorySlug}&subCategory=${subCategory.slug}',
                         );
                       },
                       child: Container(
@@ -323,7 +339,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                           children: [
                             Container(
                               width: 58,
-                              height: 60,
+                              height: 62,
                               decoration: BoxDecoration(
                                 color: AppColors.cardBackground,
                                 borderRadius: BorderRadius.circular(8),
@@ -350,7 +366,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                                 fontWeight: FontWeight.w500,
                               ),
                               textAlign: TextAlign.center,
-                              maxLines: 2,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
@@ -436,7 +452,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Everyday ${widget.categoryName}',
+                'Everyday ${widget.categorySlug}',
                 style: AppTextStyles.h3,
               ),
               TextButton(

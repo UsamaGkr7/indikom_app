@@ -11,37 +11,61 @@ import '../../../../core/utils/extensions.dart';
 import '../../../../config/routing/route_paths.dart';
 import '../../../../shared/widgets/language_switcher.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  void initState() {
+    super.initState();
+    // ✅ Fetch fresh profile data when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AuthBloc>().add(AuthFetchProfileEvent());
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: _buildAppBar(context),
+      appBar: AppBar(
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        title: Text(
+          context.tr('profile'),
+          style: AppTextStyles.h3,
+        ),
+        centerTitle: true,
+        actions: [
+          const LanguageSwitcher(showDropdown: false),
+          const SizedBox(width: 12),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Profile Header with Shimmer Loading
+            // Profile Header with BlocBuilder for live updates
             BlocBuilder<AuthBloc, AuthState>(
               builder: (context, state) {
                 if (state is AuthLoading) {
                   return _buildShimmerProfileHeader();
                 }
 
-                String phoneNumber = '';
                 if (state is AuthAuthenticated) {
-                  phoneNumber = state.userData['phone_number'] ?? '';
+                  return _buildProfileHeader(context, state.userData);
                 }
 
-                return _buildProfileHeader(context, phoneNumber);
+                return _buildProfileHeader(context, {});
               },
             ),
 
             const SizedBox(height: 24),
 
-            // Menu Items (static, no shimmer needed)
+            // Menu Items
             _buildMenuSection(context),
           ],
         ),
@@ -49,23 +73,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return AppBar(
-      backgroundColor: AppColors.surface,
-      elevation: 0,
-      title: Text(
-        context.tr('profile'),
-        style: AppTextStyles.h3,
-      ),
-      centerTitle: true,
-      actions: [
-        const LanguageSwitcher(showDropdown: false),
-        const SizedBox(width: 12),
-      ],
-    );
-  }
-
-  // ✅ Shimmer Profile Header (shown while loading)
   Widget _buildShimmerProfileHeader() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -82,39 +89,35 @@ class ProfileScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Shimmer Avatar
           ShimmerLoading.circularAvatar(size: 70),
           const SizedBox(width: 16),
-
-          // Shimmer User Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ShimmerLoading.container(
-                  width: 120,
-                  height: 20,
-                  borderRadius: BorderRadius.circular(4),
-                ),
+                ShimmerLoading.container(width: 120, height: 20),
                 const SizedBox(height: 8),
-                ShimmerLoading.container(
-                  width: 150,
-                  height: 16,
-                  borderRadius: BorderRadius.circular(4),
-                ),
+                ShimmerLoading.container(width: 150, height: 16),
               ],
             ),
           ),
-
-          // Shimmer Edit Button
           ShimmerLoading.circularAvatar(size: 40),
         ],
       ),
     );
   }
 
-  // ✅ Actual Profile Header (shown when loaded)
-  Widget _buildProfileHeader(BuildContext context, String phoneNumber) {
+  Widget _buildProfileHeader(
+      BuildContext context, Map<String, dynamic> userData) {
+    final fullName = userData['full_name'] ??
+        '${userData['first_name'] ?? ''} ${userData['last_name'] ?? ''}'
+            .trim() ??
+        'User';
+    final phone = userData['phone'] ?? '';
+    final role = userData['role'] ?? 'customer';
+    final isVerified = userData['is_verified'] == true;
+    final profilePicture = userData['profile_picture'];
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -137,8 +140,16 @@ class ProfileScreen extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.primary.withOpacity(0.1),
               shape: BoxShape.circle,
+              image: profilePicture != null
+                  ? DecorationImage(
+                      image: NetworkImage(profilePicture),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
-            child: Image.asset('assets/images/maleAvatar.png'),
+            child: profilePicture == null
+                ? const Icon(Icons.person, size: 35, color: AppColors.primary)
+                : null,
           ),
           const SizedBox(width: 16),
 
@@ -147,17 +158,45 @@ class ProfileScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'User',
-                  style: AppTextStyles.h3.copyWith(fontSize: 18),
+                Row(
+                  children: [
+                    Text(
+                      fullName,
+                      style: AppTextStyles.h3.copyWith(fontSize: 18),
+                    ),
+                    if (isVerified) ...[
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.verified,
+                        color: AppColors.success,
+                        size: 18,
+                      ),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  phoneNumber.isNotEmpty
-                      ? phoneNumber
-                      : context.tr('phone_number'),
+                  phone.isNotEmpty ? phone : context.tr('phone_number'),
                   style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                // Role badge
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _getRoleColor(role).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    role.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: _getRoleColor(role),
+                    ),
                   ),
                 ),
               ],
@@ -174,6 +213,17 @@ class ProfileScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Color _getRoleColor(String role) {
+    switch (role) {
+      case 'admin':
+        return AppColors.error;
+      case 'supplier':
+        return AppColors.secondary;
+      default:
+        return AppColors.primary;
+    }
   }
 
   Widget _buildMenuSection(BuildContext context) {
@@ -197,7 +247,7 @@ class ProfileScreen extends StatelessWidget {
             icon: Icons.location_on_outlined,
             title: context.tr('saved_addresses'),
             onTap: () {
-              // Navigate to saved addresses
+              context.push(RoutePaths.addressList);
             },
           ),
 

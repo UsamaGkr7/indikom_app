@@ -12,13 +12,15 @@ abstract class SubCategoryEvent extends Equatable {
 }
 
 class LoadSubCategoriesEvent extends SubCategoryEvent {
-  final String? categoryName;
+  final int? categoryId; // ✅ Changed to int
 
-  const LoadSubCategoriesEvent({this.categoryName});
+  const LoadSubCategoriesEvent({this.categoryId});
 
   @override
-  List<Object?> get props => [categoryName];
+  List<Object?> get props => [categoryId];
 }
+
+// Update the handler:
 
 // States
 abstract class SubCategoryState extends Equatable {
@@ -69,7 +71,7 @@ class SubCategoryBloc extends Bloc<SubCategoryEvent, SubCategoryState> {
 
     try {
       final subCategories = await _subCategoryRepository.fetchSubCategories(
-        categoryName: event.categoryName,
+        categoryId: event.categoryId, // ✅ Pass categoryId (int)
       );
       emit(SubCategoriesLoaded(subCategories: subCategories));
     } catch (e) {

@@ -1,26 +1,38 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../../../../core/network/api_service.dart';
 import '../../../../core/constants/endpoints.dart';
 import '../models/banner_model.dart';
 
 class BannerRepository {
-  final http.Client _client;
+  final ApiService _apiService;
 
-  BannerRepository({http.Client? client}) : _client = client ?? http.Client();
+  BannerRepository({ApiService? apiService})
+      : _apiService = apiService ?? ApiService();
 
   Future<List<BannerModel>> fetchBanners() async {
     try {
-      final url = Uri.parse('${Endpoints.baseUrl}${Endpoints.banners}');
-      final response = await _client.get(url);
+      print(
+          '📰 Fetching banners from: ${Endpoints.baseUrl}${Endpoints.banners}');
+
+      final response = await _apiService.get(Endpoints.banners);
 
       print('📰 Banner API Response: ${response.statusCode}');
       print('📰 Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final List<dynamic> jsonData = json.decode(response.body);
-        final banners = jsonData
-            .map((json) => BannerModel.fromJson(json))
-            .where((banner) => banner.isActive) // Only active banners
+        final jsonData = json.decode(response.body);
+
+        // ✅ Handle paginated response - extract 'results' array
+        final List<dynamic> results = jsonData['results'] is List
+            ? jsonData['results'] as List<dynamic>
+            : jsonData is List
+                ? jsonData
+                : [];
+
+        final banners = results
+            .map((json) => BannerModel.fromJson(json as Map<String, dynamic>))
+            .where((BannerModel banner) => banner.isActive)
             .toList();
 
         print('✅ Loaded ${banners.length} active banners');

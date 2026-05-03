@@ -1,28 +1,41 @@
 import 'package:http/http.dart' as http;
-import 'package:indikom_app/core/constants/endpoints.dart';
 import 'dart:convert';
+import '../../../../core/network/api_service.dart';
+import '../../../../core/constants/endpoints.dart';
 import '../models/category_model.dart';
 
 class CategoryRepository {
-  final http.Client _client;
+  final ApiService _apiService;
 
-  CategoryRepository({http.Client? client}) : _client = client ?? http.Client();
+  CategoryRepository({ApiService? apiService})
+      : _apiService = apiService ?? ApiService();
 
   Future<List<CategoryModel>> fetchCategories() async {
     try {
-      const url = '${Endpoints.baseUrl}/api/products/categories/list/';
-
-      final response = await _client.get(Uri.parse(url));
+      final response = await _apiService.get(Endpoints.categories);
 
       print('📂 Categories API Response: ${response.statusCode}');
       print('📂 Response Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final List<dynamic> jsonData = json.decode(response.body);
-        final categories = jsonData
-            .map((json) => CategoryModel.fromJson(json))
-            .where((category) => category.isActive)
+        final jsonData = json.decode(response.body);
+
+        // ✅ Handle paginated response - extract 'results' array
+        final List<dynamic> results = jsonData['results'] is List
+            ? jsonData['results'] as List<dynamic>
+            : jsonData is List
+                ? jsonData
+                : [];
+
+        // ✅ Map and filter with explicit type casting
+        final categories = results
+            .map((json) => CategoryModel.fromJson(json as Map<String, dynamic>))
+            .where((CategoryModel category) =>
+                category.isActive) // ✅ Explicit type
             .toList();
+
+        // ✅ Sort by sortOrder field
+        categories.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
         print('✅ Loaded ${categories.length} active categories');
         return categories;

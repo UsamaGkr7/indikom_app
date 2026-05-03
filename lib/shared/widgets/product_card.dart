@@ -4,23 +4,24 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/text_styles.dart';
 
 class ProductCard extends StatelessWidget {
-  final String? imageUrl; // ✅ Made nullable
+  final String? imageUrl;
   final String title;
-  final String price;
-  final String? originalPrice;
-  final String? discount;
-  final VoidCallback? onTap;
+  final String price; // ✅ Already required
+  final String? originalPrice; // ✅ Already nullable
+  final String? discount; // ✅ Already nullable
   final int? productId;
+  final VoidCallback? onTap;
 
-  const ProductCard(
-      {super.key,
-      this.imageUrl, // ✅ Optional now
-      required this.title,
-      required this.price,
-      this.originalPrice,
-      this.discount,
-      this.onTap,
-      this.productId});
+  const ProductCard({
+    super.key,
+    this.imageUrl,
+    required this.title,
+    required this.price, // ✅ Keep required
+    this.originalPrice,
+    this.discount,
+    this.productId,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:indikom_app/core/constants/endpoints.dart';
-import 'package:indikom_app/core/theme/text_styles.dart';
+import 'package:carousel_slider/carousel_slider.dart'; // ✅ Keep this import
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/text_styles.dart';
 import '../../data/models/banner_model.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 
 class BannerCarousel extends StatefulWidget {
   final List<BannerModel> banners;
@@ -18,20 +17,7 @@ class BannerCarousel extends StatefulWidget {
 }
 
 class _BannerCarouselState extends State<BannerCarousel> {
-  @override
-  void initState() {
-    super.initState();
-
-    // Test first banner URL
-    if (widget.banners.isNotEmpty) {
-      String testUrl = '${Endpoints.baseUrl}${widget.banners.first.bannerFile}';
-      print('🔍 Testing URL: $testUrl');
-      print('🔍 Base URL: ${Endpoints.baseUrl}');
-      print('🔍 Banner File: ${widget.banners.first.bannerFile}');
-    }
-  }
-
-  int _currentIndex = 0;
+  int _currentIndex = 0; // ✅ Move this UP (before build method)
   final CarouselSliderController _carouselController =
       CarouselSliderController();
 
@@ -53,22 +39,45 @@ class _BannerCarouselState extends State<BannerCarousel> {
           options: CarouselOptions(
             height: 250,
             viewportFraction: 0.80,
-            enlargeCenterPage: true, // 👈 center big
-            enlargeFactor: 0.15, // 👈 scaling
-            autoPlay: true,
+            enlargeCenterPage: true,
+            enlargeFactor: 0.15,
+            autoPlay: false,
             autoPlayInterval: const Duration(seconds: 4),
             autoPlayAnimationDuration: const Duration(milliseconds: 800),
+
+            // ✅ CHANGE 1: Add enableRotation to fix semantics
+            // enableRotation: false,
+
+            // ✅ CHANGE 2: Add scrollPhysics for smoother scroll
+            scrollPhysics: const BouncingScrollPhysics(),
+
+            // ✅ CHANGE 3: Safe setState in onPageChanged
             onPageChanged: (index, reason) {
-              setState(() {
-                _currentIndex = index;
-              });
+              if (mounted) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    setState(() {
+                      _currentIndex = index;
+                    });
+                  }
+                });
+              }
             },
           ),
+
+          // ✅ CHANGE 4: Wrap items with Semantics + add Keys
           items: widget.banners.map((banner) {
-            return _buildBannerItem(banner);
+            return Semantics(
+              enabled: false, // ✅ Disable semantics for carousel items
+              child: Container(
+                key: ValueKey(banner.id), // ✅ Add unique key for each banner
+                child: _buildBannerItem(banner),
+              ),
+            );
           }).toList(),
         ),
         const SizedBox(height: 12),
+
         // Page indicators
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -91,13 +100,8 @@ class _BannerCarouselState extends State<BannerCarousel> {
   }
 
   Widget _buildBannerItem(BannerModel banner) {
-    // ✅ Construct full image URL
+    // ✅ API returns full URL - use as-is (no changes needed here)
     String imageUrl = banner.bannerFile;
-
-    if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-      // Only prepend base URL if it's a relative path
-      imageUrl = '${Endpoints.baseUrl}$imageUrl';
-    }
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8),

@@ -18,3 +18,16 @@ extension BuildContextExtensions on BuildContext {
     return currentLocale.languageCode == 'en';
   }
 }
+
+extension StringSlugExtension on String {
+  /// Convert a string to a URL-friendly slug
+  /// "Home Appliances" → "home-appliances"
+  /// "Compass Box" → "compass-box"
+  String toSlug() {
+    return toLowerCase()
+        .replaceAll(RegExp(r'[^\w\s-]'), '') // Remove special chars
+        .trim()
+        .replaceAll(
+            RegExp(r'[\s_-]+'), '-'); // Replace spaces/underscores with hyphens
+  }
+}

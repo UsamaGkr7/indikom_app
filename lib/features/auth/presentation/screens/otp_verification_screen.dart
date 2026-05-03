@@ -121,6 +121,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     });
   }
 
+  // In _handleVerifyOTP method - already correct, but just to confirm:
+
   void _handleVerifyOTP() {
     final otp = _getOTP();
 
@@ -134,7 +136,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       context.read<AuthBloc>().add(
             AuthVerifyOtpEvent(
               phoneNumber: widget.phoneNumber,
-              otp: otp,
+              otp: otp, // This will be sent as 'code' in the bloc
             ),
           );
     } else {

@@ -6,12 +6,14 @@ import '../../../../core/theme/text_styles.dart';
 
 class CategoryCard extends StatelessWidget {
   final String? imageUrl;
+  final String? iconUrl; // ✅ Add icon URL parameter
   final String label;
   final VoidCallback onTap;
 
   const CategoryCard({
     super.key,
     this.imageUrl,
+    this.iconUrl, // ✅ New parameter
     required this.label,
     required this.onTap,
   });
@@ -39,7 +41,7 @@ class CategoryCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // ✅ Image with shimmer loading
+            // ✅ Use icon if available, fallback to thumbnail
             Container(
               width: 58,
               height: 50,
@@ -47,11 +49,11 @@ class CategoryCard extends StatelessWidget {
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: imageUrl != null && imageUrl!.isNotEmpty
+              child: (iconUrl != null && iconUrl!.isNotEmpty)
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: CachedNetworkImage(
-                        imageUrl: imageUrl!,
+                        imageUrl: iconUrl!,
                         fit: BoxFit.contain,
                         placeholder: (context, url) => Container(
                           color: AppColors.cardBackground,
@@ -59,23 +61,48 @@ class CategoryCard extends StatelessWidget {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           ),
                         ),
-                        errorWidget: (context, url, error) => Container(
-                          color: AppColors.cardBackground,
-                          child: const Icon(
+                        errorWidget: (context, url, error) {
+                          // Fallback to thumbnail if icon fails
+                          if (imageUrl != null && imageUrl!.isNotEmpty) {
+                            return CachedNetworkImage(
+                              imageUrl: imageUrl!,
+                              fit: BoxFit.contain,
+                              errorWidget: (context, error, stackTrace) =>
+                                  const Icon(Icons.category,
+                                      size: 28, color: AppColors.primary),
+                            );
+                          }
+                          return const Icon(Icons.category,
+                              size: 28, color: AppColors.primary);
+                        },
+                      ),
+                    )
+                  : (imageUrl != null && imageUrl!.isNotEmpty)
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: CachedNetworkImage(
+                            imageUrl: imageUrl!,
+                            fit: BoxFit.contain,
+                            placeholder: (context, url) => Container(
+                              color: AppColors.cardBackground,
+                              child: const Center(
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => const Icon(
+                                Icons.category,
+                                size: 28,
+                                color: AppColors.primary),
+                          ),
+                        )
+                      : const Center(
+                          child: Icon(
                             Icons.category,
                             color: AppColors.primary,
                             size: 28,
                           ),
                         ),
-                      ),
-                    )
-                  : const Center(
-                      child: Icon(
-                        Icons.category,
-                        color: AppColors.primary,
-                        size: 28,
-                      ),
-                    ),
             ),
             const SizedBox(height: 8),
             Text(

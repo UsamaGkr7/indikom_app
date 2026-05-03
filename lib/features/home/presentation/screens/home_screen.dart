@@ -31,13 +31,37 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  bool _isLoading = false;
   @override
   void initState() {
     super.initState();
+    print("at home screen called::::::");
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HomeBloc>().add(LoadHomeDataEvent());
-      context.read<CategoryBloc>().add(LoadCategoriesEvent());
+      _loadHomeData();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Only load once per dependency change
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadHomeData();
+    });
+  }
+
+  void _loadHomeData() {
+    print('load home data called:::::::');
+
+    context.read<HomeBloc>().add(LoadHomeDataEvent());
+    context.read<CategoryBloc>().add(LoadCategoriesEvent());
+
+    // ✅ Load ALL products (no filters)
+    context.read<ProductBloc>().add(const LoadProductsEvent(
+          categoryName: null,
+          subCategoryName: null,
+          searchQuery: null,
+        ));
   }
 
   @override
@@ -321,12 +345,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.only(right: 12),
                       child: CategoryCard(
                         imageUrl: category.thumbnail,
+                        iconUrl: category.icon, // ✅ Pass icon URL
                         label: category.name,
                         onTap: () {
-                          // ✅ Navigate to product list filtered by category
+                          // ✅ Navigate using slug (more reliable than name)
                           context.push(
-                            '${RoutePaths.categoryDetail}?category=${category.name}',
-                            extra: {'thumbnail': category.thumbnail},
+                            '${RoutePaths.categoryDetail}?category=${category.slug}',
+                            extra: {
+                              'thumbnail': category.thumbnail,
+                              'icon': category.icon,
+                              'categoryId':
+                                  category.id, // ✅ Pass the category ID (int)
+                            },
                           );
                         },
                       ),
@@ -492,6 +522,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final product = displayProducts[index];
 
+        // In _buildProductGrid method, update the ProductCard:
+
         return OpenContainer(
           transitionType: ContainerTransitionType.fadeThrough,
           transitionDuration: const Duration(milliseconds: 900),
@@ -503,15 +535,26 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: openContainer,
               child: ProductCard(
                 productId: product.id,
+
+                // ✅ Use displayImage helper which handles nulls
                 imageUrl:
-                    product.thumbnail ?? 'https://via.placeholder.com/200',
+                    product.displayImage ?? 'https://via.placeholder.com/200',
+
                 title: product.name,
-                price: '\$${product.price}',
-                originalPrice: product.originalPrice != null
-                    ? '\$${product.originalPrice}'
+
+                // ✅ Use effectivePrice if available, fallback to price
+                price: product.effectivePrice != null
+                    ? '\$${product.effectivePrice!.toStringAsFixed(0)}'
+                    : '\$${double.tryParse(product.price)?.toStringAsFixed(0) ?? product.price}',
+
+                // ✅ Use discountPrice for strikethrough original price (not product.price)
+                originalPrice: product.discountPrice != null
+                    ? '\$${product.discountPrice}'
                     : null,
-                discount: product.discount != null
-                    ? '${product.discount!.toStringAsFixed(0)}% OFF'
+
+                // ✅ Safe: no ! needed after null check
+                discount: product.discountPercentage != null
+                    ? '${product.discountPercentage}% OFF' // ✅ Removed redundant !
                     : null,
               ),
             );

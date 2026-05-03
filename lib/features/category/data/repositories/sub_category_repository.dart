@@ -1,40 +1,50 @@
 import 'package:http/http.dart' as http;
-import 'package:indikom_app/core/constants/endpoints.dart';
 import 'dart:convert';
+import '../../../../core/network/api_service.dart'; // ✅ Use authenticated API service
+import '../../../../core/constants/endpoints.dart';
 import '../models/sub_category_model.dart';
 
 class SubCategoryRepository {
-  final http.Client _client;
+  final ApiService _apiService; // ✅ Use ApiService for auth
 
-  SubCategoryRepository({http.Client? client})
-      : _client = client ?? http.Client();
+  SubCategoryRepository({ApiService? apiService})
+      : _apiService = apiService ?? ApiService();
 
-  Future<List<SubCategoryModel>> fetchSubCategories(
-      {String? categoryName}) async {
+  Future<List<SubCategoryModel>> fetchSubCategories({int? categoryId}) async {
     try {
-      String url = '${Endpoints.baseUrl}/api/products/sub-categories/list/';
+      // ✅ Try different query parameter formats
+      String url = Endpoints.subCategories;
 
-      // Add category filter if provided
-      if (categoryName != null && categoryName.isNotEmpty) {
-        url += '?category=$categoryName';
+      if (categoryId != null) {
+        // Try 'category' first (most common)
+        url += '?category=$categoryId';
       }
 
-      print('📂 Fetching sub-categories from: $url');
+      print('📂 Attempt 1: Fetching from: ${Endpoints.baseUrl}$url');
 
-      final response = await _client.get(Uri.parse(url));
+      final response = await _apiService.get(url);
 
-      print('📂 Sub-Categories API Response: ${response.statusCode}');
-      print('📂 Response Body: ${response.body}');
-
+      // ✅ If first attempt returns 0 results, try 'category_id'
       if (response.statusCode == 200) {
-        final List<dynamic> jsonData = json.decode(response.body);
-        final subCategories = jsonData
-            .map((json) => SubCategoryModel.fromJson(json))
-            .where((sub) => sub.isActive)
-            .toList();
+        final jsonData = json.decode(response.body);
+        final results = jsonData['results'] as List<dynamic>? ?? [];
 
-        print('✅ Loaded ${subCategories.length} active sub-categories');
-        return subCategories;
+        if (results.isEmpty && categoryId != null) {
+          print('⚠️ No results with "category" param, trying "category_id"...');
+
+          // Try with category_id
+          String altUrl = '${Endpoints.subCategories}?category_id=$categoryId';
+          print('📂 Attempt 2: Fetching from: ${Endpoints.baseUrl}$altUrl');
+
+          final altResponse = await _apiService.get(altUrl);
+
+          if (altResponse.statusCode == 200) {
+            final altJsonData = json.decode(altResponse.body);
+            return _parseSubCategoriesResponse(altJsonData);
+          }
+        }
+
+        return _parseSubCategoriesResponse(jsonData);
       } else {
         throw Exception(
             'Failed to load sub-categories: ${response.statusCode}');
@@ -43,5 +53,26 @@ class SubCategoryRepository {
       print('❌ Error fetching sub-categories: $e');
       throw Exception('Failed to load sub-categories: $e');
     }
+  }
+
+// ✅ Helper to parse response
+  List<SubCategoryModel> _parseSubCategoriesResponse(dynamic jsonData) {
+    final List<dynamic> results = jsonData['results'] is List
+        ? jsonData['results'] as List<dynamic>
+        : jsonData is List
+            ? jsonData
+            : [];
+
+    print('📊 Parsed ${results.length} sub-categories from response');
+
+    final subCategories = results
+        .map((json) => SubCategoryModel.fromJson(json as Map<String, dynamic>))
+        .where((SubCategoryModel sub) => sub.isActive)
+        .toList();
+
+    subCategories.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+    print('✅ Loaded ${subCategories.length} active sub-categories');
+    return subCategories;
   }
 }

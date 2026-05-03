@@ -2,6 +2,9 @@ import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:indikom_app/core/utils/extensions.dart';
+import 'package:indikom_app/features/address/data/models/address_model.dart';
+import 'package:indikom_app/features/address/presentation/screens/address_form_screen.dart';
+import 'package:indikom_app/features/address/presentation/screens/address_list_screen.dart';
 import 'package:indikom_app/features/auth/presentation/screens/splash_screen.dart';
 import 'package:indikom_app/features/category/presentation/screens/category_detail_screen.dart';
 import 'package:indikom_app/features/product/data/models/product_model.dart';
@@ -103,52 +106,98 @@ class AppRouter {
 
         GoRoute(
           path: RoutePaths.productList,
-          pageBuilder: (context, state) => CustomTransitionPage<void>(
-            key: state.pageKey,
-            child: ProductListScreen(
-              category: state.uri.queryParameters['category'],
-              searchQuery: state.uri.queryParameters['search'],
-            ),
-            transitionDuration: const Duration(milliseconds: 400),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              return SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(1, 0),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: child,
-              );
-            },
-          ),
+          pageBuilder: (context, state) {
+            final categorySlug = state.uri.queryParameters['category'];
+            final subCategorySlug = state.uri.queryParameters['subCategory'];
+            final searchQuery = state.uri.queryParameters['search'];
+
+            // Note: You'll need to fetch category/sub-category IDs from a cache or API
+            // For now, pass slugs and let the screen handle filtering client-side
+            // Or implement a category lookup service
+
+            return CustomTransitionPage<void>(
+              key: state.pageKey,
+              child: ProductListScreen(
+                categorySlug: categorySlug,
+                subCategorySlug: subCategorySlug,
+                searchQuery: searchQuery,
+                // categoryId: ...,  // Fetch from category service if needed
+                // subCategoryId: ...,
+              ),
+              transitionDuration: const Duration(milliseconds: 400),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                return SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(1, 0),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                );
+              },
+            );
+          },
         ),
 
         GoRoute(
           path: RoutePaths.productDetail,
-          pageBuilder: (context, state) => CustomTransitionPage<void>(
-            key: state.pageKey,
-            child: ProductDetailScreen(product: state.extra as ProductModel),
-            transitionDuration: const Duration(milliseconds: 500),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              return SharedAxisTransition(
-                animation: animation,
-                secondaryAnimation: secondaryAnimation,
-                transitionType: SharedAxisTransitionType.vertical,
-                child: child,
-              );
-            },
-          ),
-        ),
+          pageBuilder: (context, state) {
+            // ✅ Product is passed via extra, but you could also fetch by slug:
+            // final slug = state.pathParameters['slug'];
+            // return BlocProvider(
+            //   create: (_) => ProductBloc()..add(LoadProductBySlugEvent(slug: slug)),
+            //   child: ProductDetailScreen(),
+            // );
 
+            final product = state.extra as ProductModel;
+
+            return CustomTransitionPage<void>(
+              key: state.pageKey,
+              child: ProductDetailScreen(product: product),
+              transitionDuration: const Duration(milliseconds: 500),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) {
+                return SharedAxisTransition(
+                  animation: animation,
+                  secondaryAnimation: secondaryAnimation,
+                  transitionType: SharedAxisTransitionType.vertical,
+                  child: child,
+                );
+              },
+            );
+          },
+        ),
         GoRoute(
           path: RoutePaths.categoryDetail,
           builder: (context, state) {
-            final categoryName = state.uri.queryParameters['category'] ?? '';
-            final categoryThumbnail = state.uri.queryParameters['thumbnail'];
+            final categorySlug = state.uri.queryParameters['category'] ?? '';
+            final extra = state.extra as Map<String, dynamic>?;
+
             return CategoryDetailScreen(
-              categoryName: categoryName,
-              categoryThumbnail: categoryThumbnail,
+              categorySlug: categorySlug,
+              categoryThumbnail: extra?['thumbnail'],
+              categoryIcon: extra?['icon'],
+              categoryId: extra?['categoryId'], // ✅ Extract categoryId (int)
+            );
+          },
+        ),
+
+        GoRoute(
+          path: RoutePaths.addressList,
+          builder: (context, state) => const AddressListScreen(),
+        ),
+
+        GoRoute(
+          path: RoutePaths.addAddress,
+          builder: (context, state) => const AddressFormScreen(),
+        ),
+
+        GoRoute(
+          path: RoutePaths.editAddress,
+          builder: (context, state) {
+            final address = state.extra as Map<String, dynamic>?;
+            return AddressFormScreen(
+              address: address?['address'] as AddressModel?,
             );
           },
         ),

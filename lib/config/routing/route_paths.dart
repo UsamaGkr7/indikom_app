@@ -18,4 +18,9 @@ class RoutePaths {
   static const String adminDashboard = '/admin/dashboard';
 
   static const String categoryDetail = '/category-detail';
+
+  // ✅ Address routes
+  static const String addressList = '/addresses';
+  static const String addAddress = '/addresses/add';
+  static const String editAddress = '/addresses/edit';
 }

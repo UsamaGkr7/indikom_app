@@ -11,7 +11,30 @@ abstract class ProductEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class LoadProductsEvent extends ProductEvent {}
+class LoadProductsEvent extends ProductEvent {
+  final String? categoryName;
+  final String? subCategoryName;
+  final String? searchQuery;
+
+  const LoadProductsEvent({
+    this.categoryName,
+    this.subCategoryName,
+    this.searchQuery,
+  });
+
+  @override
+  List<Object?> get props => [categoryName, subCategoryName, searchQuery];
+}
+
+class LoadProductBySlugEvent extends ProductEvent {
+  // ✅ Changed from ID to slug
+  final String slug;
+
+  const LoadProductBySlugEvent({required this.slug});
+
+  @override
+  List<Object?> get props => [slug];
+}
 
 class LoadProductsByCategoryEvent extends ProductEvent {
   final String category;
@@ -78,8 +101,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       : _productRepository = productRepository ?? ProductRepository(),
         super(ProductInitial()) {
     on<LoadProductsEvent>(_onLoadProducts);
-    // on<LoadProductsByCategoryEvent>(_onLoadProductsByCategory);
-    on<LoadProductByIdEvent>(_onLoadProductById);
+    on<LoadProductBySlugEvent>(_onLoadProductBySlug); // ✅ Changed handler
   }
 
   Future<void> _onLoadProducts(
@@ -89,36 +111,26 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     emit(ProductLoading());
 
     try {
-      final products = await _productRepository.fetchProducts();
+      final products = await _productRepository.fetchProducts(
+        categorySlug: event.categoryName,
+        subCategorySlug: event.subCategoryName,
+        searchQuery: event.searchQuery,
+      );
       emit(ProductsLoaded(products: products));
     } catch (e) {
       emit(ProductError(message: e.toString()));
     }
   }
 
-  // Future<void> _onLoadProductsByCategory(
-  //   LoadProductsByCategoryEvent event,
-  //   Emitter<ProductState> emit,
-  // ) async {
-  //   emit(ProductLoading());
-
-  //   try {
-  //     final products =
-  //         await _productRepository.fetchProductsByCategory(event.category);
-  //     emit(ProductsLoaded(products: products));
-  //   } catch (e) {
-  //     emit(ProductError(message: e.toString()));
-  //   }
-  // }
-
-  Future<void> _onLoadProductById(
-    LoadProductByIdEvent event,
+  Future<void> _onLoadProductBySlug(
+    // ✅ New handler for slug
+    LoadProductBySlugEvent event,
     Emitter<ProductState> emit,
   ) async {
     emit(ProductLoading());
 
     try {
-      final product = await _productRepository.fetchProductById(event.id);
+      final product = await _productRepository.fetchProductBySlug(event.slug);
       emit(ProductLoaded(product: product));
     } catch (e) {
       emit(ProductError(message: e.toString()));

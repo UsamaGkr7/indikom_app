@@ -15,13 +15,19 @@ import '../bloc/product_bloc.dart';
 import '../widgets/filter_bottom_sheet.dart';
 
 class ProductListScreen extends StatefulWidget {
-  final String? category;
+  final String? categorySlug; // ✅ Changed from category to categorySlug
+  final String? subCategorySlug; // ✅ New
   final String? searchQuery;
+  final int? categoryId; // ✅ New: for API filtering
+  final int? subCategoryId; // ✅ New: for API filtering
 
   const ProductListScreen({
     super.key,
-    this.category,
+    this.categorySlug,
+    this.subCategorySlug,
     this.searchQuery,
+    this.categoryId,
+    this.subCategoryId,
   });
 
   @override
@@ -33,16 +39,36 @@ class _ProductListScreenState extends State<ProductListScreen> {
   String _sortOrder = 'asc';
   bool _isGridView = true;
   final TextEditingController _searchController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
     _searchController.text = widget.searchQuery ?? '';
-    context.read<ProductBloc>().add(LoadProductsEvent());
+
+    // ✅ Load products with category/sub-category IDs for API filtering
+    context.read<ProductBloc>().add(
+          LoadProductsEvent(
+            categoryName: widget.categorySlug,
+            subCategoryName: widget.subCategorySlug,
+            searchQuery: widget.searchQuery,
+          ),
+        );
   }
 
   @override
   void dispose() {
+    // ✅ Clear filters when leaving this screen
+    // This ensures home screen shows all products
+    print('dispose called::::::');
+    // Future.delayed(Duration(milliseconds: 100), () {
+    //   if (mounted) {
+    //     context.read<ProductBloc>().add(const LoadProductsEvent(
+    //           categoryName: null,
+    //           subCategoryName: null,
+    //           searchQuery: null,
+    //         ));
+    //   }
+    // });
+
     _searchController.dispose();
     super.dispose();
   }
@@ -55,7 +81,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           product.name
               .toLowerCase()
               .contains(_searchController.text.toLowerCase()) ||
-          product.description
+          product.description!
               .toLowerCase()
               .contains(_searchController.text.toLowerCase());
       return searchMatch;
@@ -153,15 +179,35 @@ class _ProductListScreenState extends State<ProductListScreen> {
       backgroundColor: AppColors.surface,
       elevation: 0,
       leading: IconButton(
-        onPressed: () => context.pop(),
+        onPressed: () {
+          context.read<ProductBloc>().add(const LoadProductsEvent(
+                categoryName: null,
+                subCategoryName: null,
+                searchQuery: null,
+              ));
+          context.pop();
+        },
         icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
       ),
       title: Text(
-        widget.category ?? context.tr('all_products'),
+        widget.categorySlug?.replaceAll('-', ' ').toTitleCase() ??
+            context.tr('all_products'),
         style: AppTextStyles.h3,
       ),
       centerTitle: true,
       actions: [
+        IconButton(
+          onPressed: () {
+            print('🔄 Reloading all products before home navigation');
+            context.read<ProductBloc>().add(const LoadProductsEvent(
+                  categoryName: null,
+                  subCategoryName: null,
+                  searchQuery: null,
+                ));
+            context.push(RoutePaths.home);
+          },
+          icon: const Icon(Icons.home_outlined, color: AppColors.primary),
+        ),
         IconButton(
           onPressed: () {
             // Cart icon
@@ -409,6 +455,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
       itemBuilder: (context, index) {
         final product = products[index];
 
+        // In _buildProductGrid method, update the ProductCard:
+
         return OpenContainer(
           transitionType: ContainerTransitionType.fadeThrough,
           transitionDuration: const Duration(milliseconds: 900),
@@ -419,16 +467,28 @@ class _ProductListScreenState extends State<ProductListScreen> {
             return GestureDetector(
               onTap: openContainer,
               child: ProductCard(
-                imageUrl: product.imageUrl,
-                title: product.name,
-                price: '\$${product.price}',
-                originalPrice: product.originalPrice != null
-                    ? '\$${product.originalPrice}'
-                    : null,
-                discount: product.discount != null
-                    ? '${product.discount!.toStringAsFixed(0)}% OFF'
-                    : null,
                 productId: product.id,
+
+                // ✅ Use displayImage helper which handles nulls
+                imageUrl:
+                    product.displayImage ?? 'https://via.placeholder.com/200',
+
+                title: product.name,
+
+                // ✅ Use effectivePrice if available, fallback to price
+                price: product.effectivePrice != null
+                    ? '\$${product.effectivePrice!.toStringAsFixed(0)}'
+                    : '\$${double.tryParse(product.price)?.toStringAsFixed(0) ?? product.price}',
+
+                // ✅ Use discountPrice for strikethrough original price (not product.price)
+                originalPrice: product.discountPrice != null
+                    ? '\$${product.discountPrice}'
+                    : null,
+
+                // ✅ Safe: no ! needed after null check
+                discount: product.discountPercentage != null
+                    ? '${product.discountPercentage}% OFF' // ✅ Removed redundant !
+                    : null,
               ),
             );
           },
@@ -474,9 +534,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     ClipRRect(
                       borderRadius: const BorderRadius.horizontal(
                           left: Radius.circular(12)),
-                      child: product.imageUrl != null
+                      child: product.file != null
                           ? Image.network(
-                              product.imageUrl!,
+                              product.file!,
                               width: 120,
                               height: 120,
                               fit: BoxFit.cover,
@@ -524,10 +584,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                     fontSize: 18,
                                   ),
                                 ),
-                                if (product.originalPrice != null) ...[
+                                if (product.discountPrice != null) ...[
                                   const SizedBox(width: 8),
                                   Text(
-                                    '\$${product.originalPrice}',
+                                    '\$${product.discountPrice}',
                                     style: AppTextStyles.bodySmall.copyWith(
                                       decoration: TextDecoration.lineThrough,
                                       color: AppColors.textHint,
@@ -555,5 +615,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
         );
       },
     );
+  }
+}
+
+extension StringExtensions on String {
+  String toTitleCase() {
+    return split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
   }
 }

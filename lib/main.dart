@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:indikom_app/core/network/api_service.dart';
+import 'package:indikom_app/features/address/presentation/bloc/address_bloc.dart';
 import 'package:indikom_app/features/category/presentation/bloc/category_bloc.dart';
 import 'package:indikom_app/features/category/presentation/bloc/sub_category_bloc.dart';
 import 'package:indikom_app/features/home/bloc/home_bloc.dart';
@@ -26,7 +28,14 @@ void main() async {
   // ✅ Create instances ONCE
   final languageBloc = LanguageBloc(settingsBox: settingsBox)
     ..add(LoadLanguageEvent());
-  final authBloc = AuthBloc(authBox: authBox); // ✅ Fixed: pass authBox
+  final apiService = ApiService();
+
+  final authBloc = AuthBloc(
+    authBox: authBox,
+    apiService: apiService,
+  ); // ✅ Fixed: pass authBox
+
+  // ✅ Create ApiService instance
 
   // ✅ Initialize router ONCE
   AppRouter().initialize();
@@ -69,6 +78,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (_) => SubCategoryBloc(),
+        ),
+        BlocProvider(
+          create: (_) => AddressBloc(),
         ),
       ],
       child: BlocBuilder<LanguageBloc, LanguageState>(
