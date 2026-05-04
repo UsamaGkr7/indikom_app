@@ -41,7 +41,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
             viewportFraction: 0.80,
             enlargeCenterPage: true,
             enlargeFactor: 0.15,
-            autoPlay: false,
+            autoPlay: true,
             autoPlayInterval: const Duration(seconds: 4),
             autoPlayAnimationDuration: const Duration(milliseconds: 800),
 

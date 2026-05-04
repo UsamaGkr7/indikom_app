@@ -6,17 +6,17 @@ import 'package:indikom_app/core/utils/responsive_utils.dart';
 import 'package:indikom_app/features/category/presentation/bloc/sub_category_bloc.dart';
 import 'package:indikom_app/features/home/presentation/bloc/banner_bloc.dart';
 import 'package:indikom_app/features/home/presentation/widgets/banner_carousel.dart';
+import 'package:indikom_app/features/product/data/models/product_model.dart';
+import 'package:indikom_app/features/product/data/repositories/product_repository.dart';
 import 'package:indikom_app/shared/widgets/product_card.dart';
 import 'package:indikom_app/shared/widgets/shimmer_loading.dart';
 import 'package:shimmer_animation/shimmer_animation.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
 import '../../../../core/utils/extensions.dart';
-import '../../../product/presentation/bloc/product_bloc.dart';
-import '../../../product/data/models/product_model.dart';
 
 class CategoryDetailScreen extends StatefulWidget {
-  final String categorySlug; // ✅ Changed from categorySlug to categorySlug
+  final String categorySlug;
   final String? categoryThumbnail;
   final String? categoryIcon;
   final int? categoryId;
@@ -34,72 +34,59 @@ class CategoryDetailScreen extends StatefulWidget {
 }
 
 class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
+  // State variables for products
+  List<ProductModel> _allProducts = [];
+  List<ProductModel> _topDeals = [];
+  List<ProductModel> _everydayItems = [];
+  bool _isLoadingProducts = false;
+
   @override
   void initState() {
     super.initState();
-
-    print('🏷️ CategoryDetailScreen initialized');
-    print('🏷️ Category Slug: ${widget.categorySlug}');
-    print('🏷️ Category ID: ${widget.categoryId}');
-
-    // ✅ Load sub-categories using categoryId
-    if (widget.categoryId != null) {
-      print('📡 Loading sub-categories for category ID: ${widget.categoryId}');
-      context.read<SubCategoryBloc>().add(
-            LoadSubCategoriesEvent(categoryId: widget.categoryId),
-          );
-    } else {
-      print('⚠️ No categoryId provided, loading all sub-categories');
-      context.read<SubCategoryBloc>().add(
-            const LoadSubCategoriesEvent(categoryId: null),
-          );
-    }
+    _loadSubCategories();
+    _loadCategoryProducts();
   }
 
-  Widget _buildBannerErrorWidget(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.all(8),
-      height: 250,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white, width: 2),
-      ),
-      child: Shimmer(
-        enabled: true,
-        color: AppColors.primaryLight,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.broken_image,
-              size: 60,
-              color: AppColors.primary,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Failed to load banners',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextButton.icon(
-              onPressed: () {
-                // ✅ Retry loading banners
-                context.read<BannerBloc>().add(LoadBannersEvent());
-              },
-              icon: const Icon(Icons.refresh, size: 16),
-              label: const Text('Retry'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  // Load sub-categories for this category
+  void _loadSubCategories() {
+    context.read<SubCategoryBloc>().add(
+          LoadSubCategoriesEvent(categoryId: widget.categoryId),
+        );
+  }
+
+  // ✅ Load all products for this category
+  Future<void> _loadCategoryProducts() async {
+    if (widget.categoryId == null) return;
+
+    setState(() => _isLoadingProducts = true);
+
+    try {
+      print('📦 Loading products for category ID: ${widget.categoryId}');
+
+      final allProducts = await ProductRepository().fetchProducts(
+        categorySlug: widget.categorySlug,
+      );
+
+      print('📦 Total products loaded: ${allProducts.length}');
+
+      // ✅ Filter products
+      final topDeals = allProducts.where((p) => p.isTopDeal).toList();
+
+      final everydayItems = allProducts.where((p) => p.isDailyUseItem).toList();
+
+      print('️ Top Deals: ${topDeals.length}');
+      print('🏷️ Everyday Items: ${everydayItems.length}');
+
+      setState(() {
+        _allProducts = allProducts;
+        _topDeals = topDeals;
+        _everydayItems = everydayItems;
+        _isLoadingProducts = false;
+      });
+    } catch (e) {
+      print('❌ Error loading products: $e');
+      setState(() => _isLoadingProducts = false);
+    }
   }
 
   @override
@@ -109,17 +96,11 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       appBar: _buildAppBar(),
       body: CustomScrollView(
         slivers: [
-          // Banner (Optional - can be category-specific banner)
-          // SliverToBoxAdapter(
-          //   child: _buildBanner(),
-          // ),
-          // Promotional Banner with Shimmer
+          // Banner
           BlocBuilder<BannerBloc, BannerState>(
             builder: (context, state) {
               if (state is BannerLoading) {
-                return SliverToBoxAdapter(
-                  child: ShimmerLoading.banner(),
-                );
+                return SliverToBoxAdapter(child: ShimmerLoading.banner());
               }
 
               if (state is BannerLoaded && state.banners.isNotEmpty) {
@@ -131,40 +112,36 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                 );
               }
 
-              // ✅ Handle error state - show retry option
-              if (state is BannerError) {
-                return SliverToBoxAdapter(
-                  child: _buildBannerErrorWidget(context),
-                );
-              }
-
-              // ✅ Fallback - show shimmer again (not empty space)
-              return SliverToBoxAdapter(
-                child: ShimmerLoading.banner(),
-              );
+              return const SliverToBoxAdapter(child: SizedBox(height: 250));
             },
           ),
 
           const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
           // Sub-Categories Section
-          SliverToBoxAdapter(
-            child: _buildSubCategoriesSection(),
-          ),
+          SliverToBoxAdapter(child: _buildSubCategoriesSection()),
 
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-          // Top Deals Section
-          SliverToBoxAdapter(
-            child: _buildTopDealsSection(),
-          ),
+          // ✅ Top Deals Section
+          if (_isLoadingProducts)
+            SliverToBoxAdapter(child: _buildShimmerSection('Top Deals'))
+          else if (_topDeals.isNotEmpty)
+            SliverToBoxAdapter(child: _buildTopDealsSection())
+          else
+            const SliverToBoxAdapter(child: SizedBox.shrink()),
 
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-          // Everyday Products Section
-          SliverToBoxAdapter(
-            child: _buildEverydaySection(),
-          ),
+          // ✅ Everyday Items Section
+          if (_isLoadingProducts)
+            SliverToBoxAdapter(
+                child: _buildShimmerSection(
+                    'Everyday ${widget.categorySlug.toTitleCase()}'))
+          else if (_everydayItems.isNotEmpty)
+            SliverToBoxAdapter(child: _buildEverydaySection())
+          else
+            const SliverToBoxAdapter(child: SizedBox.shrink()),
 
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
@@ -181,77 +158,18 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
       ),
       title: Text(
-        widget.categorySlug,
+        widget.categorySlug.toTitleCase(),
         style: AppTextStyles.h3,
       ),
       centerTitle: true,
       actions: [
         IconButton(
-          onPressed: () {
-            // Cart icon
-          },
+          onPressed: () {},
           icon: const Icon(Icons.shopping_cart_outlined,
               color: AppColors.primary),
         ),
         const SizedBox(width: 8),
       ],
-    );
-  }
-
-  Widget _buildBanner() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      height: 200,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary.withOpacity(0.8),
-            AppColors.secondary.withOpacity(0.8),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -50,
-            bottom: -50,
-            child: Opacity(
-              opacity: 0.2,
-              child: Icon(
-                Icons.shopping_bag,
-                size: 200,
-                color: Colors.white,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  widget.categorySlug,
-                  style: AppTextStyles.h1.copyWith(
-                    color: Colors.white,
-                    fontSize: 32,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Explore our amazing collection',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -264,11 +182,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
             children: [
               Padding(
                 padding: Responsive.horizontalPadding(context, false),
-                child: ShimmerLoading.container(
-                  width: 120,
-                  height: 24,
-                  borderRadius: BorderRadius.circular(4),
-                ),
+                child: ShimmerLoading.container(width: 120, height: 24),
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -277,10 +191,8 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: 4,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: 12),
-                  itemBuilder: (context, index) =>
-                      ShimmerLoading.categoryCard(),
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (_, __) => ShimmerLoading.categoryCard(),
                 ),
               ),
             ],
@@ -288,12 +200,11 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         }
 
         if (state is SubCategoriesLoaded && state.subCategories.isNotEmpty) {
-          // ✅ FILTER by category ID (int), not slug (String)
           final filteredSubCategories = widget.categoryId != null
               ? state.subCategories
                   .where((sub) => sub.category == widget.categoryId)
                   .toList()
-              : state.subCategories; // If no categoryId, show all
+              : state.subCategories;
 
           if (filteredSubCategories.isEmpty) {
             return const SizedBox.shrink();
@@ -305,7 +216,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'Shop by ${widget.categorySlug}', // Display name (slug or name)
+                  'Shop by ${widget.categorySlug.toTitleCase()}',
                   style: AppTextStyles.h3,
                 ),
               ),
@@ -316,13 +227,11 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: filteredSubCategories.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: 12),
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
                   itemBuilder: (context, index) {
                     final subCategory = filteredSubCategories[index];
                     return GestureDetector(
                       onTap: () {
-                        // ✅ Navigate using slug for both category and sub-category
                         context.push(
                           '${RoutePaths.productList}?category=${widget.categorySlug}&subCategory=${subCategory.slug}',
                         );
@@ -350,10 +259,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                                       child: Image.network(
                                         subCategory.thumbnail!,
                                         fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (context, error, stackTrace) =>
-                                                const Icon(Icons.category,
-                                                    size: 28),
+                                        errorBuilder: (_, __, ___) =>
+                                            const Icon(Icons.category,
+                                                size: 28),
                                       ),
                                     )
                                   : const Icon(Icons.category, size: 28),
@@ -385,12 +293,13 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     );
   }
 
+  // ✅ Top Deals Section
   Widget _buildTopDealsSection() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: const Color(0xFF1a1a2e), // Dark background for top deals
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -401,22 +310,25 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
             children: [
               Text(
                 'Top Deals',
-                style: AppTextStyles.h3,
+                style: AppTextStyles.h3.copyWith(
+                  color: Colors.white,
+                  fontSize: 20,
+                ),
               ),
               TextButton(
                 onPressed: () {
-                  // See all deals
+                  // Navigate to all top deals
                 },
                 child: Row(
                   children: [
                     Text(
-                      context.tr('see_all'),
+                      'See All',
                       style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.primary,
+                        color: AppColors.secondary,
                       ),
                     ),
                     const Icon(Icons.arrow_forward,
-                        size: 16, color: AppColors.primary),
+                        size: 16, color: AppColors.secondary),
                   ],
                 ),
               ),
@@ -432,9 +344,10 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               mainAxisSpacing: 12,
               childAspectRatio: 0.75,
             ),
-            itemCount: 4,
+            itemCount: _topDeals.length > 4 ? 4 : _topDeals.length,
             itemBuilder: (context, index) {
-              return ShimmerLoading.productCard();
+              final product = _topDeals[index];
+              return _buildDarkProductCard(product);
             },
           ),
         ],
@@ -442,6 +355,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     );
   }
 
+  // ✅ Everyday Items Section
   Widget _buildEverydaySection() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -452,17 +366,17 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Everyday ${widget.categorySlug}',
+                'Everyday ${widget.categorySlug.toTitleCase()}',
                 style: AppTextStyles.h3,
               ),
               TextButton(
                 onPressed: () {
-                  // See all
+                  // Navigate to all everyday items
                 },
                 child: Row(
                   children: [
                     Text(
-                      context.tr('see_all'),
+                      'See All',
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.primary,
                       ),
@@ -479,16 +393,17 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
             height: 250,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: 4,
-              separatorBuilder: (context, index) => const SizedBox(width: 12),
+              itemCount: _everydayItems.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
               itemBuilder: (context, index) {
+                final product = _everydayItems[index];
                 return Container(
                   width: 200,
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: ShimmerLoading.productCard(),
+                  child: _buildEverydayProductCard(product),
                 );
               },
             ),
@@ -496,5 +411,191 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         ],
       ),
     );
+  }
+
+  // ✅ Dark Product Card for Top Deals
+  Widget _buildDarkProductCard(ProductModel product) {
+    return GestureDetector(
+      onTap: () {
+        context.push(RoutePaths.productDetail, extra: product);
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1a1a2e),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Product Image
+            Expanded(
+              child: ClipRRect(
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
+                child: product.displayImage != null
+                    ? Image.network(
+                        product.displayImage!,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: AppColors.cardBackground,
+                          child: const Icon(Icons.image, size: 40),
+                        ),
+                      )
+                    : Container(
+                        color: AppColors.cardBackground,
+                        child: const Icon(Icons.image, size: 40),
+                      ),
+              ),
+            ),
+            // Product Info
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: Colors.white),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  if (product.categoryName != null)
+                    Text(
+                      product.categoryName!,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: Colors.white,
+                        fontSize: 11,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        '\$${product.effectivePrice?.toStringAsFixed(0) ?? product.price}',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                            fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      if (product.discountPrice != null) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          '\$${product.discountPrice}',
+                          style: AppTextStyles.bodySmall.copyWith(
+                              decoration: TextDecoration.lineThrough,
+                              color: Colors.white),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ✅ Everyday Product Card (Horizontal)
+  Widget _buildEverydayProductCard(ProductModel product) {
+    return GestureDetector(
+      onTap: () {
+        context.push(RoutePaths.productDetail, extra: product);
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Product Image
+          Expanded(
+            child: ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(12)),
+              child: product.displayImage != null
+                  ? Image.network(
+                      product.displayImage!,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: AppColors.cardBackground,
+                        child: const Icon(Icons.image, size: 40),
+                      ),
+                    )
+                  : Container(
+                      color: AppColors.cardBackground,
+                      child: const Icon(Icons.image, size: 40),
+                    ),
+            ),
+          ),
+          // Product Info
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  product.name,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '\$${product.effectivePrice?.toStringAsFixed(0) ?? product.price}',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ Shimmer Loading for Sections
+  Widget _buildShimmerSection(String title) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ShimmerLoading.container(width: 150, height: 24),
+          const SizedBox(height: 16),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.75,
+            ),
+            itemCount: 4,
+            itemBuilder: (_, __) => ShimmerLoading.productCard(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+extension StringExtensions on String {
+  String toTitleCase() {
+    return split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
   }
 }

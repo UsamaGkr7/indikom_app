@@ -530,16 +530,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       print('Opening AR view: ${_displayProduct.arFile}');
                     }
                   : null,
-              icon: Icon(
-                Icons.view_in_ar,
-                color: _displayProduct.hasAr
-                    ? AppColors.primary
-                    : AppColors.textHint,
+              icon: Padding(
+                padding: const EdgeInsets.only(left: 8.0),
+                child: Icon(
+                  Icons.view_in_ar,
+                  size: 25,
+                  color: _displayProduct.hasAr
+                      ? AppColors.primary
+                      : AppColors.textHint,
+                ),
               ),
               label: Text(
                 _displayProduct.hasAr
                     ? context.tr('view_in_your_room')
                     : context.tr('ar_not_available'),
+                textAlign: TextAlign.center,
               ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: _displayProduct.hasAr
