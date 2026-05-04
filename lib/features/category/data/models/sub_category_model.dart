@@ -48,10 +48,10 @@ class SubCategoryModel {
     if (url == null || url.isEmpty) return null;
 
     const replacements = {
-      'http://127.0.0.1:8000': 'http://192.168.0.105:8000',
-      'http://localhost:8000': 'http://192.168.0.105:8000',
-      'http://192.168.0.103:8000': 'http://192.168.0.105:8000',
-      'http://192.168.1.24:8000': 'http://192.168.0.105:8000',
+      'http://127.0.0.1:8000': 'http://192.168.0.102:8000',
+      'http://localhost:8000': 'http://192.168.0.102:8000',
+      'http://192.168.0.103:8000': 'http://192.168.0.102:8000',
+      'http://192.168.1.24:8000': 'http://192.168.0.102:8000',
     };
 
     for (final entry in replacements.entries) {
