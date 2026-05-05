@@ -133,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: _buildCategorySection('sofas'),
+              child: _buildCategorySection('Home Appliances'),
             ),
           ),
 

@@ -39,9 +39,9 @@ class BannerModel {
     if (url.startsWith('http://') || url.startsWith('https://')) {
       // But fix if it's localhost or wrong IP
       const replacements = {
-        'http://127.0.0.1:8000': 'http://192.168.0.102:8000',
-        'http://localhost:8000': 'http://192.168.0.102:8000',
-        'http://192.168.0.102:8000': 'http://192.168.0.102:8000',
+        'http://127.0.0.1:8000': 'http://192.168.0.105:8000',
+        'http://localhost:8000': 'http://192.168.0.105:8000',
+        'http://192.168.0.105:8000': 'http://192.168.0.105:8000',
       };
 
       for (final entry in replacements.entries) {
@@ -54,7 +54,7 @@ class BannerModel {
     }
 
     // If relative path, prepend base URL
-    return 'http://192.168.0.102:8000$url';
+    return 'http://192.168.0.105:8000$url';
   }
 
   Map<String, dynamic> toJson() {

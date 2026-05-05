@@ -176,6 +176,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   Widget _buildSubCategoriesSection() {
     return BlocBuilder<SubCategoryBloc, SubCategoryState>(
       builder: (context, state) {
+        // Show shimmer while loading
         if (state is SubCategoryLoading) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,6 +200,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
           );
         }
 
+        // ✅ Show sub-categories if available
         if (state is SubCategoriesLoaded && state.subCategories.isNotEmpty) {
           final filteredSubCategories = widget.categoryId != null
               ? state.subCategories
@@ -206,8 +208,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   .toList()
               : state.subCategories;
 
+          // ✅ If no sub-categories for this category, show "Coming Soon"
           if (filteredSubCategories.isEmpty) {
-            return const SizedBox.shrink();
+            return _buildComingSoonSection();
           }
 
           return Column(
@@ -288,8 +291,79 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
           );
         }
 
-        return const SizedBox.shrink();
+        // ✅ Also show "Coming Soon" if no sub-categories at all
+        return _buildComingSoonSection();
       },
+    );
+  }
+
+// ✅ New method: Build "Coming Soon" section
+  Widget _buildComingSoonSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 60),
+      child: Column(
+        children: [
+          // Icon
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.shopping_bag_outlined,
+              size: 60,
+              color: AppColors.primary.withOpacity(0.6),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Title
+          Text(
+            'Coming Soon',
+            style: AppTextStyles.h2.copyWith(
+              fontSize: 24,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Subtitle
+          Text(
+            'will be available soon',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+
+          // Optional: Notify Me button
+          OutlinedButton.icon(
+            onPressed: () {
+              // Optional: Add to notification list
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('We\'ll notify you when it\'s ready!'),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+            },
+            icon: const Icon(Icons.notifications_outlined),
+            label: const Text('Notify Me'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
