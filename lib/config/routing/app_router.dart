@@ -110,6 +110,8 @@ class AppRouter {
             final categorySlug = state.uri.queryParameters['category'];
             final subCategorySlug = state.uri.queryParameters['subCategory'];
             final searchQuery = state.uri.queryParameters['search'];
+            final filterType =
+                state.uri.queryParameters['filter']; // ✅ EXTRACT FILTER
 
             // Note: You'll need to fetch category/sub-category IDs from a cache or API
             // For now, pass slugs and let the screen handle filtering client-side
@@ -121,6 +123,7 @@ class AppRouter {
                 categorySlug: categorySlug,
                 subCategorySlug: subCategorySlug,
                 searchQuery: searchQuery,
+                filterType: filterType,
                 // categoryId: ...,  // Fetch from category service if needed
                 // subCategoryId: ...,
               ),

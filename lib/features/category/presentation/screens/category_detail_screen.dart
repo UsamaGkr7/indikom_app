@@ -39,6 +39,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   List<ProductModel> _topDeals = [];
   List<ProductModel> _everydayItems = [];
   bool _isLoadingProducts = false;
+  bool _hasSubCategories = false;
 
   @override
   void initState() {
@@ -71,10 +72,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
 
       // ✅ Filter products
       final topDeals = allProducts.where((p) => p.isTopDeal).toList();
-
       final everydayItems = allProducts.where((p) => p.isDailyUseItem).toList();
 
-      print('️ Top Deals: ${topDeals.length}');
+      print('🔥 Top Deals: ${topDeals.length}');
       print('🏷️ Everyday Items: ${everydayItems.length}');
 
       setState(() {
@@ -121,27 +121,32 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
           // Sub-Categories Section
           SliverToBoxAdapter(child: _buildSubCategoriesSection()),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
-          // ✅ Top Deals Section
-          if (_isLoadingProducts)
-            SliverToBoxAdapter(child: _buildShimmerSection('Top Deals'))
-          else if (_topDeals.isNotEmpty)
-            SliverToBoxAdapter(child: _buildTopDealsSection())
-          else
-            const SliverToBoxAdapter(child: SizedBox.shrink()),
+          // ✅ Show "No Products" message if sub-categories exist but no products
+          if (_hasSubCategories && !_isLoadingProducts && _allProducts.isEmpty)
+            SliverToBoxAdapter(child: _buildNoProductsSection())
+          else ...[
+            // ✅ Top Deals Section
+            if (_isLoadingProducts)
+              SliverToBoxAdapter(child: _buildShimmerSection('Top Deals'))
+            else if (_topDeals.isNotEmpty)
+              SliverToBoxAdapter(child: _buildTopDealsSection())
+            else
+              const SliverToBoxAdapter(child: SizedBox.shrink()),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-          // ✅ Everyday Items Section
-          if (_isLoadingProducts)
-            SliverToBoxAdapter(
-                child: _buildShimmerSection(
-                    'Everyday ${widget.categorySlug.toTitleCase()}'))
-          else if (_everydayItems.isNotEmpty)
-            SliverToBoxAdapter(child: _buildEverydaySection())
-          else
-            const SliverToBoxAdapter(child: SizedBox.shrink()),
+            // ✅ Everyday Items Section
+            if (_isLoadingProducts)
+              SliverToBoxAdapter(
+                  child: _buildShimmerSection(
+                      'Everyday ${widget.categorySlug.toTitleCase()}'))
+            else if (_everydayItems.isNotEmpty)
+              SliverToBoxAdapter(child: _buildEverydaySection())
+            else
+              const SliverToBoxAdapter(child: SizedBox.shrink()),
+          ],
 
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
@@ -201,15 +206,19 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         }
 
         // ✅ Show sub-categories if available
-        if (state is SubCategoriesLoaded && state.subCategories.isNotEmpty) {
+        if (state is SubCategoriesLoaded) {
           final filteredSubCategories = widget.categoryId != null
               ? state.subCategories
                   .where((sub) => sub.category == widget.categoryId)
                   .toList()
               : state.subCategories;
 
+          // Update hasSubCategories flag
+          _hasSubCategories = filteredSubCategories.isNotEmpty;
+
           // ✅ If no sub-categories for this category, show "Coming Soon"
           if (filteredSubCategories.isEmpty) {
+            _hasSubCategories = false;
             return _buildComingSoonSection();
           }
 
@@ -292,12 +301,83 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         }
 
         // ✅ Also show "Coming Soon" if no sub-categories at all
+        _hasSubCategories = false;
         return _buildComingSoonSection();
       },
     );
   }
 
-// ✅ New method: Build "Coming Soon" section
+  // ✅ New method: Build "No Products" section
+  Widget _buildNoProductsSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Column(
+        children: [
+          // Icon
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.inventory_2_outlined,
+              size: 60,
+              color: AppColors.primary.withOpacity(0.6),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Title
+          Text(
+            'No Products Yet',
+            style: AppTextStyles.h2.copyWith(
+              fontSize: 24,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Subtitle
+          Text(
+            'We\'re working on adding products\nto ${widget.categorySlug.toTitleCase()}',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+
+          // Notify Me button
+          OutlinedButton.icon(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content:
+                      Text('We\'ll notify you when products are available!'),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+            },
+            icon: const Icon(Icons.notifications_outlined),
+            label: const Text('Notify Me'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ New method: Build "Coming Soon" section
   Widget _buildComingSoonSection() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -390,8 +470,11 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                 ),
               ),
               TextButton(
+                // ✅ Navigate to ProductList with top deals filter
                 onPressed: () {
-                  // Navigate to all top deals
+                  context.push(
+                    '${RoutePaths.productList}?category=${widget.categorySlug}&filter=top_deals',
+                  );
                 },
                 child: Row(
                   children: [
@@ -444,8 +527,11 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                 style: AppTextStyles.h3,
               ),
               TextButton(
+                // ✅ Navigate to ProductList with everyday items filter
                 onPressed: () {
-                  // Navigate to all everyday items
+                  context.push(
+                    '${RoutePaths.productList}?category=${widget.categorySlug}&filter=everyday',
+                  );
                 },
                 child: Row(
                   children: [

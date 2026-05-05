@@ -15,15 +15,18 @@ class LoadProductsEvent extends ProductEvent {
   final String? categoryName;
   final String? subCategoryName;
   final String? searchQuery;
+  final String? filterType;
 
   const LoadProductsEvent({
     this.categoryName,
     this.subCategoryName,
     this.searchQuery,
+    this.filterType,
   });
 
   @override
-  List<Object?> get props => [categoryName, subCategoryName, searchQuery];
+  List<Object?> get props =>
+      [categoryName, subCategoryName, searchQuery, filterType];
 }
 
 class LoadProductBySlugEvent extends ProductEvent {
@@ -116,7 +119,21 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
         subCategorySlug: event.subCategoryName,
         searchQuery: event.searchQuery,
       );
-      emit(ProductsLoaded(products: products));
+
+      // ✅ ADD THIS FILTERING LOGIC:
+      List<ProductModel> filteredProducts = products;
+
+      if (event.filterType == 'top_deals') {
+        filteredProducts = products.where((p) => p.isTopDeal).toList();
+        print('🔥 Filtered to ${filteredProducts.length} top deals');
+      } else if (event.filterType == 'everyday') {
+        filteredProducts = products.where((p) => p.isDailyUseItem).toList();
+        print('🏷️ Filtered to ${filteredProducts.length} everyday items');
+      }
+
+      emit(ProductsLoaded(
+          products:
+              filteredProducts)); // ✅ Use filteredProducts instead of products
     } catch (e) {
       emit(ProductError(message: e.toString()));
     }

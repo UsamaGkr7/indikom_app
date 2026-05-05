@@ -58,10 +58,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // ✅ Load ALL products (no filters)
     context.read<ProductBloc>().add(const LoadProductsEvent(
-          categoryName: null,
-          subCategoryName: null,
-          searchQuery: null,
-        ));
+        categoryName: null,
+        subCategoryName: null,
+        searchQuery: null,
+        filterType: null));
   }
 
   @override

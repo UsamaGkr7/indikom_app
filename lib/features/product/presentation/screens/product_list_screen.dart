@@ -18,6 +18,7 @@ class ProductListScreen extends StatefulWidget {
   final String? categorySlug; // ✅ Changed from category to categorySlug
   final String? subCategorySlug; // ✅ New
   final String? searchQuery;
+  final String? filterType;
   final int? categoryId; // ✅ New: for API filtering
   final int? subCategoryId; // ✅ New: for API filtering
 
@@ -26,6 +27,7 @@ class ProductListScreen extends StatefulWidget {
     this.categorySlug,
     this.subCategorySlug,
     this.searchQuery,
+    this.filterType,
     this.categoryId,
     this.subCategoryId,
   });
@@ -40,16 +42,24 @@ class _ProductListScreenState extends State<ProductListScreen> {
   bool _isGridView = true;
   final TextEditingController _searchController = TextEditingController();
   @override
+  @override
   void initState() {
     super.initState();
     _searchController.text = widget.searchQuery ?? '';
 
-    // ✅ Load products with category/sub-category IDs for API filtering
+    print('🔍 Loading products:');
+    print('  - Category: ${widget.categorySlug}');
+    print('  - Sub-Category: ${widget.subCategorySlug}');
+    print('  - Filter: ${widget.filterType}'); // ✅ Use widget.filterType
+    print('  - Search: ${widget.searchQuery}');
+
+    // ✅ Load products with filters
     context.read<ProductBloc>().add(
           LoadProductsEvent(
             categoryName: widget.categorySlug,
             subCategoryName: widget.subCategorySlug,
             searchQuery: widget.searchQuery,
+            filterType: widget.filterType, // ✅ Pass widget.filterType
           ),
         );
   }
@@ -184,6 +194,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 categoryName: null,
                 subCategoryName: null,
                 searchQuery: null,
+                filterType: null,
               ));
           context.pop();
         },
@@ -200,10 +211,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
           onPressed: () {
             print('🔄 Reloading all products before home navigation');
             context.read<ProductBloc>().add(const LoadProductsEvent(
-                  categoryName: null,
-                  subCategoryName: null,
-                  searchQuery: null,
-                ));
+                categoryName: null,
+                subCategoryName: null,
+                searchQuery: null,
+                filterType: null));
             context.push(RoutePaths.home);
           },
           icon: const Icon(Icons.home_outlined, color: AppColors.primary),
