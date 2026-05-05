@@ -107,6 +107,8 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
     on<LoadProductBySlugEvent>(_onLoadProductBySlug); // ✅ Changed handler
   }
 
+  // Update _onLoadProducts method:
+
   Future<void> _onLoadProducts(
     LoadProductsEvent event,
     Emitter<ProductState> emit,
@@ -120,7 +122,7 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
         searchQuery: event.searchQuery,
       );
 
-      // ✅ ADD THIS FILTERING LOGIC:
+      // ✅ Apply filter after fetching
       List<ProductModel> filteredProducts = products;
 
       if (event.filterType == 'top_deals') {
@@ -129,11 +131,13 @@ class ProductBloc extends Bloc<ProductEvent, ProductState> {
       } else if (event.filterType == 'everyday') {
         filteredProducts = products.where((p) => p.isDailyUseItem).toList();
         print('🏷️ Filtered to ${filteredProducts.length} everyday items');
+      } else if (event.filterType == 'featured') {
+        // ✅ ADD THIS
+        filteredProducts = products.where((p) => p.isFeatured).toList();
+        print('⭐ Filtered to ${filteredProducts.length} featured products');
       }
 
-      emit(ProductsLoaded(
-          products:
-              filteredProducts)); // ✅ Use filteredProducts instead of products
+      emit(ProductsLoaded(products: filteredProducts));
     } catch (e) {
       emit(ProductError(message: e.toString()));
     }

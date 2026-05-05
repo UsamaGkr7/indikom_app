@@ -32,6 +32,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -119,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-          // Featured Products with Shimmer
+          // ✅ Featured Products with Shimmer (is_featured: true)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
@@ -129,11 +130,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-          // Sofas Category with Shimmer
+          // ✅ Home Appliances Section (category_name: "Home Appliances")
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: _buildCategorySection('Home Appliances'),
+              child: _buildHomeAppliancesSection(context),
             ),
           ),
 
@@ -374,6 +375,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ✅ Featured Products Section (is_featured: true)
   Widget _buildFeaturedProducts(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -392,8 +394,10 @@ class _HomeScreenState extends State<HomeScreen> {
               return SectionHeader(
                   title: context.tr('featured_products'),
                   onSeeAllPressed: () {
-                    // Navigate to all products
-                    context.push(RoutePaths.productList);
+                    // ✅ Navigate to featured products filter
+                    context.push(
+                      '${RoutePaths.productList}?filter=featured',
+                    );
                   });
             },
           ),
@@ -412,12 +416,78 @@ class _HomeScreenState extends State<HomeScreen> {
               }
 
               if (state is ProductsLoaded) {
-                final products = state.products.take(4).toList();
+                // ✅ Filter products where is_featured: true
+                final featuredProducts =
+                    state.products.where((p) => p.isFeatured).take(4).toList();
+
                 return Responsive.isMobile(context)
-                    ? _buildProductGrid(2, products: products)
+                    ? _buildProductGrid(2, products: featuredProducts)
                     : Responsive.isTablet(context)
-                        ? _buildProductGrid(3, products: products)
-                        : _buildProductGrid(4, products: products);
+                        ? _buildProductGrid(3, products: featuredProducts)
+                        : _buildProductGrid(4, products: featuredProducts);
+              }
+
+              return _buildShimmerGrid(2);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ✅ Home Appliances Section (category_name: "Home Appliances")
+  Widget _buildHomeAppliancesSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: Responsive.horizontalPadding(context, false),
+          child: BlocBuilder<ProductBloc, ProductState>(
+            builder: (context, state) {
+              if (state is ProductLoading) {
+                return ShimmerLoading.container(
+                  width: 150,
+                  height: 24,
+                  borderRadius: BorderRadius.circular(4),
+                );
+              }
+              return SectionHeader(
+                  title: 'Home Appliances',
+                  onSeeAllPressed: () {
+                    // ✅ Navigate to home appliances filter
+                    context.push(
+                      '${RoutePaths.productList}?category=home-appliances',
+                    );
+                  });
+            },
+          ),
+        ),
+        const SizedBox(height: 16),
+        Padding(
+          padding: Responsive.horizontalPadding(context, false),
+          child: BlocBuilder<ProductBloc, ProductState>(
+            builder: (context, state) {
+              if (state is ProductLoading) {
+                return Responsive.isMobile(context)
+                    ? _buildShimmerGrid(2)
+                    : Responsive.isTablet(context)
+                        ? _buildShimmerGrid(3)
+                        : _buildShimmerGrid(4);
+              }
+
+              if (state is ProductsLoaded) {
+                // ✅ Filter products where category_name: "Home Appliances"
+                final homeAppliancesProducts = state.products
+                    .where((p) => p.categoryName == 'Home Appliances')
+                    .take(4)
+                    .toList();
+
+                return Responsive.isMobile(context)
+                    ? _buildProductGrid(2, products: homeAppliancesProducts)
+                    : Responsive.isTablet(context)
+                        ? _buildProductGrid(3, products: homeAppliancesProducts)
+                        : _buildProductGrid(4,
+                            products: homeAppliancesProducts);
               }
 
               return _buildShimmerGrid(2);
@@ -440,60 +510,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       itemCount: 4,
       itemBuilder: (context, index) => ShimmerLoading.productCard(),
-    );
-  }
-
-  Widget _buildCategorySection(String categoryName) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: Responsive.horizontalPadding(context, false),
-          child: BlocBuilder<ProductBloc, ProductState>(
-            builder: (context, state) {
-              if (state is ProductLoading) {
-                return ShimmerLoading.container(
-                  width: 100,
-                  height: 24,
-                  borderRadius: BorderRadius.circular(4),
-                );
-              }
-              return SectionHeader(
-                  title: categoryName,
-                  onSeeAllPressed: () {
-                    // Navigate to all products
-                    context.push(RoutePaths.productList);
-                  });
-            },
-          ),
-        ),
-        const SizedBox(height: 16),
-        Padding(
-          padding: Responsive.horizontalPadding(context, false),
-          child: BlocBuilder<ProductBloc, ProductState>(
-            builder: (context, state) {
-              if (state is ProductLoading) {
-                return Responsive.isMobile(context)
-                    ? _buildShimmerGrid(2)
-                    : Responsive.isTablet(context)
-                        ? _buildShimmerGrid(3)
-                        : _buildShimmerGrid(4);
-              }
-
-              if (state is ProductsLoaded) {
-                final products = state.products.take(4).toList();
-                return Responsive.isMobile(context)
-                    ? _buildProductGrid(2, products: products)
-                    : Responsive.isTablet(context)
-                        ? _buildProductGrid(3, products: products)
-                        : _buildProductGrid(4, products: products);
-              }
-
-              return _buildShimmerGrid(2);
-            },
-          ),
-        ),
-      ],
     );
   }
 
@@ -521,8 +537,6 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         final product = displayProducts[index];
-
-        // In _buildProductGrid method, update the ProductCard:
 
         return OpenContainer(
           transitionType: ContainerTransitionType.fadeThrough,
